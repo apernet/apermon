@@ -135,12 +135,28 @@ parse_err:
 }
 
 void free_sflow(sflow_parsed *parsed_pkt) {
-    sflow_parsed_samples *sample = parsed_pkt->samples, *last = NULL;
+    sflow_parsed_samples *sample = parsed_pkt->samples, *last_sample = NULL;
     while (sample != NULL) {
-        if (last != NULL) {
-            free(last);
+        if (last_sample != NULL) {
+            free(last_sample);
         }
-        last = sample;
+
+        sflow_parsed_elements *element = sample->elements, *last_element = NULL;
+        while (element != NULL) {
+            if (last_element != NULL) {
+                free(last_element);
+            }
+
+            last_element = element;
+            element = element->next;
+        }
+
+        free(last_element);
+
+        last_sample = sample;
         sample = sample->next;
     }
+
+    free(last_sample);
+    free(parsed_pkt);
 }
