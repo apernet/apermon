@@ -9,7 +9,7 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
     sflow_parsed *parsed_pkt = (sflow_parsed *) malloc(sizeof(sflow_parsed));
     sflow_parsed_samples *last_sample = parsed_pkt->samples = NULL;
 
-    uint32_t n_samples, i, ver, agent_af, sample_len;
+    uint32_t n_samples, n_elements, i, j, offset, ver, agent_af, sample_len, element_len;
 
     if (packet_len < sizeof(sflow_common_hdr)) {
         log_debug("packet too short (got size %zu)\n", packet_len);
@@ -47,8 +47,10 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
         goto parse_err;
     }
 
+    // parse sample
     for (i = 0; i < n_samples; ++i) {
         sflow_parsed_samples *parsed_sample = (sflow_parsed_samples *) malloc(sizeof(sflow_parsed_samples));
+        sflow_parsed_elements *last_element = parsed_sample->elements = NULL;
 
         if (last_sample == NULL) {
             last_sample = parsed_pkt->samples = parsed_sample;
@@ -60,7 +62,7 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
         if ((packet_len - (ptr - packet)) < sizeof(sflow_sample)) {
             log_warn(
                 "unexpected end of packet when parsing sample %lu; expecting %lu samples, "
-                "and min record size should be %zu, but only %zu bytes left in packet.", 
+                "and min record size should be %zu, but only %zu bytes left in packet.\n", 
                 i, n_samples, sizeof(sflow_sample), packet_len - (ptr - packet)
             );
             goto parse_err;
@@ -69,17 +71,59 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
         parsed_sample->sample = (const sflow_sample *) ptr;
 
         sample_len = ntohl(parsed_sample->sample->len);
+        n_elements = ntohl(parsed_sample->sample->n_elements);
 
         if ((packet_len - (ptr - packet)) < sample_len) {
             log_warn(
                 "unexpected end of packet when parsing sample %lu; expecting %lu samples, "
-                "the record has size %lu, but only %zu bytes left in packet.", 
+                "the record has size %lu, but only %zu bytes left in packet.\n", 
                 i, n_samples, parsed_sample->sample->len, packet_len - (ptr - packet)
             );
             goto parse_err;
         }
 
-        ptr += sample_len;
+        ptr += sizeof(sflow_sample);
+
+        for (j = 0, offset = 0; j < n_elements; ++j) {
+            sflow_parsed_elements *parsed_element = (sflow_parsed_elements *) malloc(sizeof(sflow_parsed_elements));
+
+            if (last_element == NULL) {
+                last_element = parsed_sample->elements = parsed_element;
+            } else {
+                last_element->next = parsed_element;
+                last_element = parsed_element;
+            }
+
+            if (sample_len - j < sizeof(sflow_sample_element_common)) {
+                log_warn(
+                    "unexpected end of sample when parsing element %lu in sample %lu; expecting %lu elements: "
+                    "no space left for element at byte %lu of sample (byte %zu of packet) - cannot fit element header. "
+                    "want size %zu, but only %lu bytes left.\n", 
+                    j, i, n_elements, offset, (size_t) (ptr - packet), sizeof(sflow_sample_element_common), sample_len - offset
+                );
+                goto parse_err;
+            }
+
+            parsed_element->common_element_hdr = (const sflow_sample_element_common *) ptr;
+
+            offset += sizeof(sflow_sample_element_common);
+            ptr += sizeof(sflow_sample_element_common);
+
+            element_len = ntohl(parsed_element->common_element_hdr->len);
+
+            if (sample_len - j < element_len) {
+                log_warn(
+                    "unexpected end of sample when parsing element %lu in sample %lu; expecting %lu samples: "
+                    "no space left for element at byte %lu of sample (byte %zu of packet) - element length is %lu, "
+                    "but only %lu bytes left.\n", 
+                    j, i, n_elements, offset, (size_t) (ptr - packet), element_len, sample_len - offset
+                );
+                goto parse_err;
+            }
+
+            ptr += element_len;
+            offset += element_len;
+        }
     }
 
     *output = parsed_pkt;
