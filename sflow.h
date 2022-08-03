@@ -25,6 +25,7 @@ typedef struct _sflow_sample_element_hdr {
     net_uint32_t orig_frame_len;
     net_uint32_t stripped;
     net_uint32_t hdr_len;
+    uint8_t hdr_bytes[];
 } sflow_sample_element_hdr;
 
 enum sflow_sampletype {

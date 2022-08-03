@@ -22,7 +22,7 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
     agent_af = ntohl(parsed_pkt->common_hdr->agent_af);
 
     if (ver != 5) {
-        log_warn("unsupported sflow version %lu\n", ver);
+        log_warn("unsupported sflow version %u\n", ver);
         goto parse_err;
     }
 
@@ -43,7 +43,7 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
         n_samples = ntohl(parsed_pkt->inet6_hdr->n_samples);
         ptr += sizeof(sflow_inet6_hdr);
     } else {
-        log_warn("unsupported sflow agent af %lu\n", parsed_pkt->common_hdr->agent_af);
+        log_warn("unsupported sflow agent af %u\n", parsed_pkt->common_hdr->agent_af);
         goto parse_err;
     }
 
@@ -61,7 +61,7 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
 
         if ((packet_len - (ptr - packet)) < sizeof(sflow_sample)) {
             log_warn(
-                "unexpected end of packet when parsing sample %lu; expecting %lu samples, "
+                "unexpected end of packet when parsing sample %u; expecting %u samples, "
                 "and min record size should be %zu, but only %zu bytes left in packet.\n", 
                 i, n_samples, sizeof(sflow_sample), packet_len - (ptr - packet)
             );
@@ -75,8 +75,8 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
 
         if ((packet_len - (ptr - packet)) < sample_len) {
             log_warn(
-                "unexpected end of packet when parsing sample %lu; expecting %lu samples, "
-                "the record has size %lu, but only %zu bytes left in packet.\n", 
+                "unexpected end of packet when parsing sample %u; expecting %u samples, "
+                "the record has size %u, but only %zu bytes left in packet.\n", 
                 i, n_samples, parsed_sample->sample->len, packet_len - (ptr - packet)
             );
             goto parse_err;
@@ -96,9 +96,9 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
 
             if (sample_len - j < sizeof(sflow_sample_element_common)) {
                 log_warn(
-                    "unexpected end of sample when parsing element %lu in sample %lu; expecting %lu elements: "
-                    "no space left for element at byte %lu of sample (byte %zu of packet) - cannot fit element header. "
-                    "want size %zu, but only %lu bytes left.\n", 
+                    "unexpected end of sample when parsing element %u in sample %u; expecting %u elements: "
+                    "no space left for element at byte %u of sample (byte %zu of packet) - cannot fit element header. "
+                    "want size %zu, but only %u bytes left.\n", 
                     j, i, n_elements, offset, (size_t) (ptr - packet), sizeof(sflow_sample_element_common), sample_len - offset
                 );
                 goto parse_err;
@@ -113,9 +113,9 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
 
             if (sample_len - j < element_len) {
                 log_warn(
-                    "unexpected end of sample when parsing element %lu in sample %lu; expecting %lu samples: "
-                    "no space left for element at byte %lu of sample (byte %zu of packet) - element length is %lu, "
-                    "but only %lu bytes left.\n", 
+                    "unexpected end of sample when parsing element %u in sample %u; expecting %u samples: "
+                    "no space left for element at byte %u of sample (byte %zu of packet) - element length is %u, "
+                    "but only %u bytes left.\n", 
                     j, i, n_elements, offset, (size_t) (ptr - packet), element_len, sample_len - offset
                 );
                 goto parse_err;
