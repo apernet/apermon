@@ -1,5 +1,5 @@
-CFLAGS=-O0 -g -Wall -Wextra
-OBJS=apermon.o extract.o sflow.o config.tab.o config.yy.o
+CFLAGS=-O0 -g -Wall -Wextra -march=native
+OBJS=apermon.o extract.o sflow.o hash.o config.tab.o config.yy.o
 FLEX=flex
 BISON=bison
 
