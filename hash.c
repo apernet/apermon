@@ -40,7 +40,7 @@ static inline apermon_hash_item *_hash_find(apermon_hash *tbl, uint32_t hashed_k
 }
 
 static inline apermon_hash_item *_hash_add_or_update(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len, void *value, void **old_value) {
-    apermon_hash_item *target, *prev;
+    apermon_hash_item *target, *prev = NULL;
 
     target = _hash_find(tbl, hashed_key, key, key_len, &prev);
 
@@ -52,6 +52,7 @@ static inline apermon_hash_item *_hash_add_or_update(apermon_hash *tbl, uint32_t
     }
 
     apermon_hash_item *item = (apermon_hash_item *) malloc(sizeof(apermon_hash_item));
+
     item->key_len = key_len;
     item->key = malloc(key_len);
     memcpy(item->key, key, key_len);
@@ -88,4 +89,36 @@ apermon_hash *new_hash() {
     memset(h, 0, sizeof(apermon_hash));
 
     return h;
+}
+
+void free_hash(apermon_hash *hash) {
+    size_t i;
+    apermon_hash_item *item, *prev;
+
+    for (i = 0; i < sizeof(hash->items) / sizeof(*hash->items); ++i) {
+        prev = NULL;
+        item = hash->items[i];
+        if (item == NULL) {
+            continue;
+        }
+
+        while (item != NULL) {
+            if (prev != NULL) {
+                free(prev);
+            }
+
+            if (item->key != NULL) {
+                free (item->key);
+            }
+
+            prev = item;
+            item = item->next;
+        }
+
+        if (prev != NULL) {
+            free(prev);
+        }
+    }
+
+    free(hash);
 }
