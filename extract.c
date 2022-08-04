@@ -152,6 +152,7 @@ int extract_flows(const sflow_parsed *parsed, apermon_flows **flows) {
                     record->pool = ntohl(sample->sample->pool);
                     record->rate = ntohl(sample->sample->rate);
                     record->seq = ntohl(sample->sample->seq);
+                    record->next = NULL;
 
                     if (last_record == NULL) {
                         last_record = extracted->records = record;

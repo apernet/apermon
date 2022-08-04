@@ -51,6 +51,7 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
     for (i = 0; i < n_samples; ++i) {
         sflow_parsed_samples *parsed_sample = (sflow_parsed_samples *) malloc(sizeof(sflow_parsed_samples));
         sflow_parsed_elements *last_element = parsed_sample->elements = NULL;
+        parsed_sample->next = NULL;
 
         if (last_sample == NULL) {
             last_sample = parsed_pkt->samples = parsed_sample;
@@ -86,6 +87,7 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
 
         for (j = 0, offset = 0; j < n_elements; ++j) {
             sflow_parsed_elements *parsed_element = (sflow_parsed_elements *) malloc(sizeof(sflow_parsed_elements));
+            parsed_element->next = NULL;
 
             if (last_element == NULL) {
                 last_element = parsed_sample->elements = parsed_element;
