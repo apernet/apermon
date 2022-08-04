@@ -1,8 +1,6 @@
 #ifndef APERMON_FLOW_H
 #define APERMON_FLOW_H
 #include <stdint.h>
-#include "hash.h"
-#include "condition.h"
 #include "context.h"
 
 typedef struct _apermon_aggregated_flow {

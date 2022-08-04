@@ -10,11 +10,13 @@ static apermon_config *_config;
 
 static apermon_config_listens *_current_listen;
 static apermon_config_agents *_current_agent;
+static apermon_config_triggers *_current_trigger;
 
 void start_config() {
     _config = (apermon_config *) malloc(sizeof(apermon_config));
     _current_listen = _config->listens = NULL;
     _current_agent = _config->agents = NULL;
+    _current_trigger = _config->triggers = NULL;
 
     memset(&_gai_hints, 0, sizeof(struct addrinfo));
     _gai_hints.ai_family = AF_UNSPEC;
