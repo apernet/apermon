@@ -14,6 +14,6 @@ typedef struct _apermon_prefix_list {
     };
 
     const struct _apermon_prefix_list *next;
-};
+} apermon_prefix_list;
 
 #endif // APERMON_H
