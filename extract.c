@@ -175,11 +175,11 @@ int extract_flows(const sflow_parsed *parsed, apermon_flows **flows) {
     return 0;
 
 extract_err:
-    free_apermon_flows(extracted);
+    free_apermon_extracted_sflows(extracted);
     return -1;
 }
 
-void free_apermon_flows(apermon_flows *flows) {
+void free_apermon_extracted_sflows(apermon_flows *flows) {
     apermon_flow_record *record = flows->records, *last_record = NULL;
     while (record != NULL) {
         if (last_record != NULL) {
