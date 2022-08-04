@@ -18,8 +18,6 @@ enum l3proto {
 };
 
 static inline int parse_inet(const uint8_t *buffer, size_t sz, apermon_flow_record **to) {
-    log_debug("buffer begin: 0x%04x\n", * (uint16_t *) buffer);
-
     const uint8_t *ptr = buffer;
     if (sz < sizeof(struct iphdr)) {
         log_warn("sampled or orig frame too short.\n");
@@ -49,8 +47,6 @@ static inline int parse_inet(const uint8_t *buffer, size_t sz, apermon_flow_reco
 }
 
 static inline int parse_inet6(const uint8_t *buffer, size_t sz, apermon_flow_record **to) {
-    log_debug("buffer begin: 0x%04x\n", * (uint16_t *) buffer);
-
     const uint8_t *ptr = buffer;
     if (sz < sizeof(struct ip6_hdr)) {
         log_warn("sampled or orig frame too short.\n");
@@ -183,5 +179,16 @@ extract_err:
 }
 
 void free_apermon_flows(apermon_flows *flows) {
-    // todo
+    apermon_flow_record *record = flows->records, *last_record = NULL;
+    while (record != NULL) {
+        if (last_record != NULL) {
+            free(last_record);
+        }
+
+        last_record = record;
+        record = record->next;
+    }
+
+    free(last_record);
+    free(flows);
 }
