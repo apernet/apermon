@@ -87,7 +87,6 @@ apermon_config_agents *get_current_agent() {
 }
 
 apermon_config_agents *end_agent(const char *agent_name) {
-
     if (_current_agent == NULL) {
         return NULL;
     }

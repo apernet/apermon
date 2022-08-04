@@ -190,6 +190,9 @@ void free_apermon_extracted_sflows(apermon_sflows *flows) {
         record = record->next;
     }
 
-    free(last_record);
+    if (last_record != NULL) {
+        free(last_record);
+    }
+
     free(flows);
 }
