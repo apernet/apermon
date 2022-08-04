@@ -17,7 +17,7 @@ enum l3proto {
     APERNET_L3_UDP = 17,
 };
 
-static inline int parse_inet(const uint8_t *buffer, size_t sz, apermon_flow_record **to) {
+static inline int parse_inet(const uint8_t *buffer, size_t sz, apermon_sflow_record **to) {
     const uint8_t *ptr = buffer;
     if (sz < sizeof(struct iphdr)) {
         log_warn("sampled or orig frame too short.\n");
@@ -28,7 +28,7 @@ static inline int parse_inet(const uint8_t *buffer, size_t sz, apermon_flow_reco
 
     ptr += sizeof(const struct iphdr);
 
-    apermon_flow_record *parsed = (apermon_flow_record *) malloc(sizeof(apermon_flow_record));
+    apermon_sflow_record *parsed = (apermon_sflow_record *) malloc(sizeof(apermon_sflow_record));
 
     parsed->flow_af = SFLOW_AF_INET;
     parsed->l3_proto = hdr->protocol;
@@ -46,7 +46,7 @@ static inline int parse_inet(const uint8_t *buffer, size_t sz, apermon_flow_reco
     return 1;
 }
 
-static inline int parse_inet6(const uint8_t *buffer, size_t sz, apermon_flow_record **to) {
+static inline int parse_inet6(const uint8_t *buffer, size_t sz, apermon_sflow_record **to) {
     const uint8_t *ptr = buffer;
     if (sz < sizeof(struct ip6_hdr)) {
         log_warn("sampled or orig frame too short.\n");
@@ -57,7 +57,7 @@ static inline int parse_inet6(const uint8_t *buffer, size_t sz, apermon_flow_rec
 
     ptr += sizeof(const struct ip6_hdr);
 
-    apermon_flow_record *parsed = (apermon_flow_record *) malloc(sizeof(apermon_flow_record));
+    apermon_sflow_record *parsed = (apermon_sflow_record *) malloc(sizeof(apermon_sflow_record));
 
     parsed->flow_af = SFLOW_AF_INET6;
     parsed->l3_proto = hdr->ip6_nxt;
@@ -76,7 +76,7 @@ static inline int parse_inet6(const uint8_t *buffer, size_t sz, apermon_flow_rec
     return 1;
 }
 
-static inline int parse_hdr(const sflow_sample_element_hdr *from, apermon_flow_record **to) {
+static inline int parse_hdr(const sflow_sample_element_hdr *from, apermon_sflow_record **to) {
     uint32_t len = ntohl(from->len);
     const uint8_t *buffer = from->hdr_bytes;
     uint16_t ethertype;
@@ -111,9 +111,9 @@ static inline int parse_hdr(const sflow_sample_element_hdr *from, apermon_flow_r
     return 0;
 }
 
-int extract_flows(const sflow_parsed *parsed, apermon_flows **flows) {
-    apermon_flows *extracted = (apermon_flows *) malloc(sizeof(apermon_flows));
-    apermon_flow_record *last_record = extracted->records = NULL, *record;
+int extract_flows(const sflow_parsed *parsed, apermon_sflows **flows) {
+    apermon_sflows *extracted = (apermon_sflows *) malloc(sizeof(apermon_sflows));
+    apermon_sflow_record *last_record = extracted->records = NULL, *record;
 
     int ret;
 
@@ -179,8 +179,8 @@ extract_err:
     return -1;
 }
 
-void free_apermon_extracted_sflows(apermon_flows *flows) {
-    apermon_flow_record *record = flows->records, *last_record = NULL;
+void free_apermon_extracted_sflows(apermon_sflows *flows) {
+    apermon_sflow_record *record = flows->records, *last_record = NULL;
     while (record != NULL) {
         if (last_record != NULL) {
             free(last_record);

@@ -30,7 +30,7 @@ typedef struct _apermon_sflow_records {
     uint16_t dst_port; // valid iff l3proto = tcp or udp
 
     struct _apermon_sflow_records *next;
-} apermon_flow_record;
+} apermon_sflow_record;
 
 typedef struct _apermon_extracted_sflows {
     uint32_t agent_af; /* enum sflow_af */
@@ -43,12 +43,12 @@ typedef struct _apermon_extracted_sflows {
     uint32_t seq;
     uint32_t uptime;
 
-    apermon_flow_record *records;
-} apermon_flows;
+    apermon_sflow_record *records;
+} apermon_sflows;
 
 
 /* functions */
-int extract_flows(const sflow_parsed *parsed, apermon_flows **flows);
-void free_apermon_extracted_sflows(apermon_flows *flows);
+int extract_flows(const sflow_parsed *parsed, apermon_sflows **flows);
+void free_apermon_extracted_sflows(apermon_sflows *flows);
 
 #endif // APERMON_EXTRACT_H
