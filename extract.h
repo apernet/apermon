@@ -5,7 +5,7 @@
 
 /* structs for extracted flow */
 
-typedef struct _apermon_sflow_records {
+typedef struct _apermon_flow_records {
     uint32_t flow_af; /* enum sflow_af */
     
     uint32_t seq;
@@ -29,10 +29,10 @@ typedef struct _apermon_sflow_records {
     uint16_t src_port; // valid iff l3proto = tcp or udp
     uint16_t dst_port; // valid iff l3proto = tcp or udp
 
-    struct _apermon_sflow_records *next;
+    struct _apermon_flow_records *next;
 } apermon_flow_record;
 
-typedef struct _apermon_extracted_sflows {
+typedef struct _apermon_flows {
     uint32_t agent_af; /* enum sflow_af */
     union {
         uint32_t agent_inet;
@@ -49,6 +49,6 @@ typedef struct _apermon_extracted_sflows {
 
 /* functions */
 int extract_flows(const sflow_parsed *parsed, apermon_flows **flows);
-void free_apermon_extracted_sflows(apermon_flows *flows);
+void free_apermon_flows(apermon_flows *flows);
 
 #endif // APERMON_EXTRACT_H
