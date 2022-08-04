@@ -4,6 +4,7 @@
     #include <string.h>
     #include <errno.h>
     #include "config.h"
+    #include "config-internal.h"
     #include "log.h"
     #include "apermon.h"
 
@@ -11,19 +12,11 @@
     extern int yylex();
     extern FILE *yyin;
 
-    static int _retval;
-    static apermon_config *_config;
     static const char *_filename;
-
-    static struct addrinfo _gai_hints;
-
-    static apermon_config_listens *_current_listen;
 
     void yyerror(const char *s);
 
-    static apermon_config *new_config();
-    static apermon_config_listens *new_listen();
-    static apermon_config_listens *config_listen(const char *host, uint16_t port);
+    #define ERR_IF_NULL(x) if ((x) == NULL) { log_error("err\n"); YYERROR; }
 %}
 
 %locations
@@ -36,19 +29,13 @@
     char *str;
 }
 
-%token OPTIONS
-%token LISTEN
-%token MIN_BAN_TIME
-
-%token LBRACE
-%token RBRACE
-%token SEMICOLON
-%token SFLOW
-%token V5
+%token OPTIONS LISTEN MIN_BAN_TIME
+%token LBRACE RBRACE SEMICOLON LBRACK RBRACK
+%token SFLOW V5
+%token AGENTS ADDRESSES
 
 %token <u64> NUMBER
-%token <str> IDENT
-%token <str> QUOTED_STRING
+%token <str> IDENT QUOTED_STRING
 %token <in_addr> IP
 %token <in6_addr> IP6
 
@@ -57,22 +44,39 @@ config: config_item | config config_item
 
 config_item
     : OPTIONS LBRACE options RBRACE
+    | AGENTS LBRACE agent_list RBRACE
+
+agent_list: agent | agent_list agent
+
+agent: IDENT LBRACE agent_options RBRACE {
+    ERR_IF_NULL(end_agent($1));
+    free($1);
+}
+
+agent_options: agent_option | agent_options agent_option
+
+agent_option
+    : ADDRESSES LBRACK agent_addresses RBRACK SEMICOLON
+
+agent_addresses: agent_address | agent_addresses agent_address
+
+agent_address
+    : IP {
+        ERR_IF_NULL(add_agent_address_inet(&$1));
+    }
+    | IP6 {
+        ERR_IF_NULL(add_agent_address_inet6(&$1));
+    }
 
 options: option_item | option_item options
 
 option_item
     : LISTEN IDENT NUMBER listen_args SEMICOLON {
-        if (config_listen($2, $3) == NULL) {
-            YYERROR;
-        }
-
+        ERR_IF_NULL(end_listen($2, $3));
         free($2);
     }
     | LISTEN QUOTED_STRING NUMBER listen_args SEMICOLON {
-        if (config_listen($2, $3) == NULL) {
-            YYERROR;
-        }
-
+        ERR_IF_NULL(end_listen($2, $3));
         free($2);
     }
     | LISTEN IP NUMBER listen_args SEMICOLON {
@@ -84,9 +88,7 @@ option_item
             YYERROR;
         }
 
-        if (config_listen(addr, $3) == NULL) {
-            YYERROR;
-        }
+        ERR_IF_NULL(end_listen(addr, $3));
     }
     | LISTEN IP6 NUMBER listen_args SEMICOLON {
         char addr[INET6_ADDRSTRLEN + 1];
@@ -97,12 +99,10 @@ option_item
             YYERROR;
         }
 
-        if (config_listen(addr, $3) == NULL) {
-            YYERROR;
-        }
+        ERR_IF_NULL(end_listen(addr, $3));
     }
     | MIN_BAN_TIME NUMBER SEMICOLON {
-        _config->min_ban_time = $2;
+        get_config()->min_ban_time = $2;
     }
 
 listen_args
@@ -111,58 +111,8 @@ listen_args
     }
 %%
 
-static apermon_config *new_config() {
-    apermon_config *config = (apermon_config *) malloc(sizeof(apermon_config));
-    config->listens = NULL;
-    return config;
-}
-
-static apermon_config_listens *new_listen() {
-    apermon_config_listens *l = _config->listens, *prev = NULL;
-    while (l != NULL) {
-        prev = l;
-        l = l->next;
-    }
-
-    if (prev == NULL) {
-        _current_listen = _config->listens = (apermon_config_listens *) malloc(sizeof(apermon_config_listens));
-    } else {
-        _current_listen = prev->next = (apermon_config_listens *) malloc(sizeof(apermon_config_listens));
-    }
-
-    _current_listen->next = NULL;
-
-    return _current_listen;
-}
-
-static apermon_config_listens *config_listen(const char *host, uint16_t port) {
-    char port_str[6];
-    memset(port_str, 0, sizeof(port_str));
-    sprintf(port_str, "%u", port);
-
-    int ret = getaddrinfo(host, port_str, &_gai_hints, &_current_listen->addr);
-
-    if (ret != 0) {
-        log_fatal("getaddrinfo() on \"%s\" failed: %s\n", host, gai_strerror(ret));
-        return NULL;
-    }
-
-    return _current_listen;
-}
-
 int parse_config(const char *filename, apermon_config **config) {
     _filename = filename;
-    _config = new_config();
-    _retval = 0;
-
-    memset(&_gai_hints, 0, sizeof(struct addrinfo));
-    _gai_hints.ai_family = AF_UNSPEC;
-    _gai_hints.ai_socktype = SOCK_DGRAM;
-    _gai_hints.ai_flags = AI_PASSIVE;
-    _gai_hints.ai_protocol = IPPROTO_UDP;
-    _gai_hints.ai_canonname = NULL;
-    _gai_hints.ai_addr = NULL;
-    _gai_hints.ai_next = NULL;
 
     FILE *f = fopen(filename, "r");
     if (!f) {
@@ -170,17 +120,18 @@ int parse_config(const char *filename, apermon_config **config) {
         return -1;
     }
 
-    yyin = f;
+    start_config();
 
+    yyin = f;
     yyparse();
     fclose(f);
 
-    *config = _config;
+    *config = get_config();
 
-    return _retval;
+    return get_retval();
 }
 
 void yyerror(const char *s) {
     log_fatal("%s:%d - %s\n", _filename, yylineno, s);
-    _retval = -1;
+    store_retval(-1);
 }

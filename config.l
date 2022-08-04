@@ -34,12 +34,28 @@ min-ban-time {
     return MIN_BAN_TIME;
 }
 
+agents {
+    return AGENTS;
+}
+
+addresses {
+    return ADDRESSES;
+}
+
 \{ {
     return LBRACE;
 }
 
 \} {
     return RBRACE;
+}
+
+\[ {
+    return LBRACK;
+}
+
+\] {
+    return RBRACK;
 }
 
 \; {
