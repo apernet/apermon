@@ -11,9 +11,12 @@ typedef struct _apermon_hash_item {
     void *value; /* ownership: caller */
 
     struct _apermon_hash_item *next;
+    struct _apermon_hash_item *iter_next;
 } apermon_hash_item;
 
 typedef struct _apermon_hash {
+    apermon_hash_item *head;
+    apermon_hash_item *tail;
     apermon_hash_item *items[HASH_MASK]; /* ownership: apermon_hash */
 } apermon_hash;
 

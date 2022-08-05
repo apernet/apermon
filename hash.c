@@ -55,9 +55,18 @@ static inline apermon_hash_item *_hash_add_or_update(apermon_hash *tbl, uint32_t
 
     item->key_len = key_len;
     item->key = malloc(key_len);
+    memset(item->key, 0, key_len);
     memcpy(item->key, key, key_len);
     item->value = value;
     item->next = NULL;
+
+    item->iter_next = NULL;
+    if (tbl->head == NULL) {
+        tbl->head = tbl->tail = item;
+    } else {
+        tbl->tail->iter_next = item;
+        tbl->tail = item;
+    }
 
     if (prev == NULL) {
         tbl->items[hashed_key] = item;
@@ -92,32 +101,28 @@ apermon_hash *new_hash() {
 }
 
 void free_hash(apermon_hash *hash) {
-    size_t i;
-    apermon_hash_item *item, *prev;
+    apermon_hash_item *item, *prev = NULL;
 
-    for (i = 0; i < sizeof(hash->items) / sizeof(*hash->items); ++i) {
-        prev = NULL;
-        item = hash->items[i];
-        if (item == NULL) {
-            continue;
-        }
+    if (hash == NULL) {
+        return;
+    }
 
-        while (item != NULL) {
-            if (prev != NULL) {
-                free(prev);
-            }
-
-            if (item->key != NULL) {
-                free (item->key);
-            }
-
-            prev = item;
-            item = item->next;
-        }
-
+    item = hash->head;
+    while (item != NULL) {
         if (prev != NULL) {
             free(prev);
         }
+
+        if (item->key != NULL) {
+            free(item->key);
+        }
+
+        prev = item;
+        item = item->iter_next;
+    }
+
+    if (prev != NULL) {
+        free(prev);
     }
 
     free(hash);
