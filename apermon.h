@@ -1,5 +1,6 @@
 #ifndef APERMON_H
 #define APERMON_H
+#include <stdint.h>
 
 typedef struct _apermon_prefix_list {
     uint32_t af; /* enum sflow_af */
