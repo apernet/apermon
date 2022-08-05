@@ -2,7 +2,7 @@
 #define APERMON_FLOW_H
 #include <stdint.h>
 
-typedef struct _apermon_context apermon_context; // prevet cicular include
+typedef struct _apermon_context apermon_context;
 
 typedef struct _apermon_aggregated_flow {
     uint32_t flow_af; /* enum sflow_af */
@@ -18,11 +18,6 @@ typedef struct _apermon_aggregated_flow {
     uint32_t last_uptime;
 } apermon_aggregated_flow;
 
-enum aggergrate_direction {
-    APERMON_AGGR_INGRESS,
-    APERMON_AGGR_EGRESS,
-};
-
-apermon_aggregated_flow *aggergrate_flow(apermon_context *ctx, const apermon_flow_record *record);
+int aggergrate_flows(apermon_context *ctx);
 
 #endif // APERMON_FLOW_H

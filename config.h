@@ -37,11 +37,30 @@ typedef struct _apermon_config_agents {
 #define APERMON_TRIGGER_CHECK_EGRESS    0b00000010
 #define APERMON_TRIGGER_SET_BAN_TIME    0b00000100
 
+enum aggregator {
+    APERMON_AGGREGATOR_HOST,
+    APERMON_AGGREGATOR_NET,
+};
+
+typedef struct _apermon_cond_list apermon_cond_list;
+typedef struct _apermon_context apermon_context;
+
 typedef struct _apermon_config_triggers {
     apermon_prefix_list *prefixes;
     uint8_t flags; /* bit 0: ingress check, 1: egress check, 2: ban time override */
+
+    enum aggregator aggregator;
+
+    uint64_t bps;
+    uint64_t pps;
     
     uint32_t min_ban_time;
+
+    apermon_cond_list *conds;
+    apermon_context *ctx;
+
+    // todo: action
+
     struct _apermon_config_triggers *next;
 } apermon_config_triggers;
 

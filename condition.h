@@ -12,19 +12,20 @@ typedef int (*apermon_cond_func)(apermon_context *ctx, const apermon_flow_record
 
 typedef struct _apermon_cond_func_list {
     apermon_cond_func func;
+    void *arg;
 
     struct _apermon_cond_func_list *next;
 } apermon_cond_func_list;
 
 enum cond_type {
-    AND,
-    OR,
-    NOT,
+    APERMON_COND_AND,
+    APERMON_COND_OR,
+    APERMON_COND_NOT,
 };
 
 typedef struct _apermon_cond_list {
     enum cond_type type;
-    const apermon_cond_func_list *funcs;
+    apermon_cond_func_list *funcs;
 
     struct _apermon_cond_list *next;
 } apermon_cond_list;
@@ -33,12 +34,15 @@ typedef struct _apermon_cond_list {
 
 int cond_list(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* apermon_cond_list* */); /* eval cond-list */
 int cond_interface(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* apermon_interface* */); /* keep only flows matching given interface */
-int cond_bps(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* uint64_t* */); /* keep only flow > given bps */
-int cond_pps(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* uint64_t* */); /* keep only flow > given pps */
 int cond_src(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* apermon_pfx_list* */); /* keep only flow where dst in list */
 int cond_dst(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* apermon_pfx_list* */); /* keep only flow where src in list */
-int cond_proto(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* apermon_uint_set* */); /* keep only flow where l3proto in list */
-int cond_src_port(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* apermon_uint_set* */); /* keep only flow where src port in list */
-int cond_dst_port(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* apermon_uint_set* */); /* keep only flow where dst port in list */
+int cond_proto(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* uint8_t* */); /* keep only flow where l3proto in list */
+int cond_src_port(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* uint16_t* */); /* keep only flow where src port in list */
+int cond_dst_port(apermon_context *ctx, const apermon_flow_record* record, const void* arg /* uint16_t* */); /* keep only flow where dst port in list */
+
+/* misc functions */
+
+void select_flow(apermon_context *ctx, const apermon_flow_record *flow);
+void free_selected_flows(apermon_context *ctx);
 
 #endif // APERMON_CONDITION_H
