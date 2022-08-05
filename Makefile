@@ -1,5 +1,5 @@
 CFLAGS=-O0 -g -Wall -Wextra -march=native
-OBJS=apermon.o condition.o extract.o flow.o hash.o net.o sflow.o config.tab.o config.yy.o config-public.o config-internal.o
+OBJS=apermon.o condition.o extract.o flow.o hash.o net.o prefix-list.o sflow.o config.tab.o config.yy.o config-public.o config-internal.o
 FLEX=flex
 BISON=bison
 
