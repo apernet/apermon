@@ -130,7 +130,7 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
     }
 
     *output = parsed_pkt;
-    return packet_len - (ptr - packet);
+    return ptr - packet;
 
 parse_err:
     free_sflow(parsed_pkt);

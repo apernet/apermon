@@ -137,7 +137,7 @@ int start_servers() {
             }
 
             if (parsed_sz != read_sz) {
-                log_debug("parsed packet length != read length.\n");
+                log_debug("parsed packet length (%zu) != read length (%zu).\n", parsed_sz, read_sz);
             }
         }
     }
