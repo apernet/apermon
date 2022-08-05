@@ -2,6 +2,7 @@
 #include <arpa/inet.h>
 #include "sflow.h"
 #include "log.h"
+#include "extract.h"
 
 ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **output) {
     const uint8_t *ptr = packet;
@@ -137,6 +138,10 @@ parse_err:
 }
 
 void free_sflow(sflow_parsed *parsed_pkt) {
+    if (parsed_pkt == NULL) {
+        return;
+    }
+
     sflow_parsed_samples *sample = parsed_pkt->samples, *last_sample = NULL;
     while (sample != NULL) {
         if (last_sample != NULL) {
@@ -161,4 +166,18 @@ void free_sflow(sflow_parsed *parsed_pkt) {
 
     free(last_sample);
     free(parsed_pkt);
+}
+
+ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
+    sflow_parsed *parsed = NULL;
+    apermon_flows *flows = NULL;
+    ssize_t ret;
+
+    ret = parse_sflow(packet, packet_len, &parsed);
+    extract_flows(parsed, &flows);
+
+    free_apermon_flows(flows);
+    free_sflow(parsed);
+
+    return ret;
 }

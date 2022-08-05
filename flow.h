@@ -1,7 +1,8 @@
 #ifndef APERMON_FLOW_H
 #define APERMON_FLOW_H
 #include <stdint.h>
-#include "context.h"
+
+typedef struct _apermon_context apermon_context; // prevet cicular include
 
 typedef struct _apermon_aggregated_flow {
     uint32_t flow_af; /* enum sflow_af */

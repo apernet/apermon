@@ -2,8 +2,10 @@
 #define APERMON_NET_H
 #include <unistd.h>
 #include "config.h"
+#include "context.h"
+#define MAX_LISTENS 128
 
-typedef size_t (*apermon_net_handler)(size_t pktsz, const uint8_t *pkt);
+typedef ssize_t (*apermon_net_handler)(const uint8_t *pkt, size_t pktsz);
 
 int init_servers(const apermon_config *config, const apermon_net_handler handlers[]);
 int start_servers();

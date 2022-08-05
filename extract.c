@@ -180,6 +180,10 @@ extract_err:
 }
 
 void free_apermon_flows(apermon_flows *flows) {
+    if (flows == NULL) {
+        return;
+    }
+
     apermon_flow_record *record = flows->records, *last_record = NULL;
     while (record != NULL) {
         if (last_record != NULL) {
