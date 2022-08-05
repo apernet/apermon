@@ -173,8 +173,23 @@ ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
     apermon_flows *flows = NULL;
     ssize_t ret;
 
+    char agent_addr[INET6_ADDRSTRLEN + 1];
+
     ret = parse_sflow(packet, packet_len, &parsed);
+
+    if (ret < 0) {
+        return ret;
+    }
+
     extract_flows(parsed, &flows);
+
+    if (flows->agent_af == SFLOW_AF_INET) {
+        inet_ntop(AF_INET, &flows->agent_inet, agent_addr, sizeof(agent_addr));
+    } else {
+        inet_ntop(AF_INET6, flows->agent_inet6, agent_addr, sizeof(agent_addr));
+    }
+    
+    log_debug("sflow packet from %s\n", agent_addr);
 
     free_apermon_flows(flows);
     free_sflow(parsed);
