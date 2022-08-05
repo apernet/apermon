@@ -6,7 +6,7 @@
     #include "config.h"
     #include "config-internal.h"
     #include "log.h"
-    #include "apermon.h"
+    #include "prefix-list.h"
 
     extern int yylineno;
     extern int yylex();

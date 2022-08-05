@@ -1,7 +1,7 @@
 %{
     #include <arpa/inet.h>
     #include "config.tab.h"
-    #include "apermon.h"
+    #include "prefix-list.h"
 %}
 
 %option noyywrap

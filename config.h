@@ -4,7 +4,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <stdio.h>
-#include "apermon.h"
+#include "prefix-list.h"
 
 enum listen_protocol {
     APERMON_LISTEN_SFLOW_V5,
@@ -46,6 +46,8 @@ typedef struct _apermon_cond_list apermon_cond_list;
 typedef struct _apermon_context apermon_context;
 
 typedef struct _apermon_config_triggers {
+    char *name;
+
     apermon_prefix_list *prefixes;
     uint8_t flags; /* bit 0: ingress check, 1: egress check, 2: ban time override */
 

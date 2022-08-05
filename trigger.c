@@ -2,6 +2,12 @@
 #include "context.h"
 #include "log.h"
 #include "flow.h"
+#include "condition.h"
+
+int init_trigger(apermon_config_triggers *config) {
+    // todo
+    return -1;
+}
 
 int run_trigger(const apermon_config_triggers *config, const apermon_flows *flows) {
     apermon_context *ctx = config->ctx;
@@ -13,7 +19,7 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     while (r != NULL) {
         r = r->next;
 
-        if (cond_list(ctx, r, config->conds)) {
+        if (cond_list(r, config->conds)) {
             select_flow(ctx, r);
         }
     }
