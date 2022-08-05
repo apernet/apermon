@@ -111,6 +111,11 @@ int start_servers() {
 
     while (_running) {
         ret = epoll_wait(efd, _eavil, MAX_EPOLL_EVENTS, 1000);
+
+        if (errno == EINTR && !_running) {
+            break;
+        }
+
         if (ret < 0) {
             log_fatal("epoll_wait(): %s\n", strerror(errno));
             return -1;
@@ -141,9 +146,16 @@ int start_servers() {
 }
 
 int stop_severs() {
+    log_info("shutting down servers...\n");
+
     _running = 0;
     return 0;
 }
 
 void free_severs() {
+    size_t i;
+
+    for (i = 0; i < _nfds; ++i) {
+        free(_events[i].data.ptr);
+    }
 }
