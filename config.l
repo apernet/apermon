@@ -42,6 +42,14 @@ addresses {
     return ADDRESSES;
 }
 
+interfaces {
+    return INTERFACES;
+}
+
+ifindexes {
+    return IFINDEXES;
+}
+
 \{ {
     return LBRACE;
 }
@@ -60,6 +68,10 @@ addresses {
 
 \; {
     return SEMICOLON;
+}
+
+\. {
+    return DOT;
 }
 
 ([0-9]{1,3}\.){3}[0-9]{1,3} {

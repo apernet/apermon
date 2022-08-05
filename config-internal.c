@@ -10,7 +10,7 @@ static apermon_config *_config;
 
 static apermon_config_listens *_current_listen;
 static apermon_config_agents *_current_agent;
-static apermon_interfaces *_current_interface;
+static apermon_config_interfaces *_current_interface;
 static apermon_config_triggers *_current_trigger;
 
 #define GET_CURRENT_NAMED_STRUCT_FUNC(type, funcname, current_var) type *funcname() {\
@@ -122,14 +122,14 @@ apermon_config_agent_addresses *add_agent_address_inet6(const struct in6_addr *a
     return a;
 }
 
-GET_CURRENT_NAMED_STRUCT_FUNC(apermon_interfaces, get_current_interface, _current_interface);
+GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_interfaces, get_current_interface, _current_interface);
 
-END_NAMED_STRUCT_FUNC(apermon_interfaces, end_interface, _current_interface, interfaces);
+END_NAMED_STRUCT_FUNC(apermon_config_interfaces, end_interface, _current_interface, interfaces);
 
-NEW_LIST_ELEMENT_FUNC(apermon_ifindexes, new_ifindex, apermon_interfaces, get_current_interface(), ifindexes);
+NEW_LIST_ELEMENT_FUNC(apermon_config_ifindexes, new_ifindex, apermon_config_interfaces, get_current_interface(), ifindexes);
 
-apermon_ifindexes *add_ifindex(const char *agent, uint32_t ifindex) {
-    apermon_ifindexes *i = new_ifindex();
+apermon_config_ifindexes *add_ifindex(const char *agent, uint32_t ifindex) {
+    apermon_config_ifindexes *i = new_ifindex();
     i->agent = strdup(agent);
     i->ifindex = ifindex;
 

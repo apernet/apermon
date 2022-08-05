@@ -45,24 +45,24 @@ typedef struct _apermon_config_triggers {
     struct _apermon_config_triggers *next;
 } apermon_config_triggers;
 
-typedef struct _apermon_ifindexes {
+typedef struct _apermon_config_ifindexes {
     char *agent;
     uint32_t ifindex;
 
-    struct _apermon_ifindexes *next;
-} apermon_ifindexes;
+    struct _apermon_config_ifindexes *next;
+} apermon_config_ifindexes;
 
-typedef struct _apermon_interfaces {
+typedef struct _apermon_config_interfaces {
     char *name;
-    apermon_ifindexes *ifindexes;
+    apermon_config_ifindexes *ifindexes;
 
-    struct _apermon_interfaces *next;
-} apermon_interfaces;
+    struct _apermon_config_interfaces *next;
+} apermon_config_interfaces;
 
 typedef struct _apermon_config {
     apermon_config_listens *listens;
     apermon_config_agents *agents;
-    apermon_interfaces *interfaces;
+    apermon_config_interfaces *interfaces;
 
     apermon_config_triggers *triggers;
 

@@ -16,7 +16,11 @@
 
     void yyerror(const char *s);
 
-    #define ERR_IF_NULL(x) if ((x) == NULL) { log_error("err\n"); YYERROR; }
+    #define ERR_IF_NULL(x) if ((x) == NULL) { \
+        store_retval(-1);\
+        log_error("internal error while parsing config file.\n");\
+        YYERROR;\
+    }
 %}
 
 %locations
@@ -33,6 +37,7 @@
 %token LBRACE RBRACE SEMICOLON LBRACK RBRACK
 %token SFLOW V5
 %token AGENTS ADDRESSES
+%token INTERFACES IFINDEXES DOT
 
 %token <u64> NUMBER
 %token <str> IDENT QUOTED_STRING
@@ -45,6 +50,24 @@ config: config_item | config config_item
 config_item
     : OPTIONS LBRACE options RBRACE
     | AGENTS LBRACE agent_list RBRACE
+    | INTERFACES LBRACE iface_list RBRACE
+
+iface_list: iface | iface_list iface
+
+iface: IDENT LBRACE iface_options RBRACE {
+    ERR_IF_NULL(end_interface($1));
+    free($1);
+}
+
+iface_options
+    : IFINDEXES LBRACK iface_indexes RBRACK SEMICOLON
+
+iface_indexes: iface_index | iface_indexes iface_index
+
+iface_index: IDENT DOT NUMBER {
+    ERR_IF_NULL(add_ifindex($1, $3));
+    free($1);
+}
 
 agent_list: agent | agent_list agent
 

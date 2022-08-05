@@ -21,10 +21,10 @@ apermon_config_agent_addresses *new_address();
 apermon_config_agent_addresses *add_agent_address_inet(const struct in_addr *addr);
 apermon_config_agent_addresses *add_agent_address_inet6(const struct in6_addr *addr);
 
-apermon_interfaces *get_current_interface();
-apermon_interfaces *end_interface(const char *ifname);
+apermon_config_interfaces *get_current_interface();
+apermon_config_interfaces *end_interface(const char *ifname);
 
-apermon_ifindexes *new_ifindex();
-apermon_ifindexes *add_ifindex(const char *agent, uint32_t ifindex);
+apermon_config_ifindexes *new_ifindex();
+apermon_config_ifindexes *add_ifindex(const char *agent, uint32_t ifindex);
 
 #endif // APERNET_CONFIG_INTERNAL_H
