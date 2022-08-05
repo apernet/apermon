@@ -10,12 +10,45 @@ static apermon_config *_config;
 
 static apermon_config_listens *_current_listen;
 static apermon_config_agents *_current_agent;
+static apermon_interfaces *_current_interface;
 static apermon_config_triggers *_current_trigger;
+
+#define GET_CURRENT_NAMED_STRUCT_FUNC(type, funcname, current_var) type *funcname() {\
+    if ((current_var) == NULL) {\
+        (current_var) = (type *) malloc(sizeof(type));\
+        memset((current_var), 0, sizeof(type));\
+    }\
+    return (current_var);\
+}
+
+#define END_NAMED_STRUCT_FUNC(type, funcname, current_var, field) type *funcname(const char *name) {\
+    if ((current_var) == NULL) { return NULL; }\
+    (current_var)->name = strdup(name);\
+    type *i = _config->field, *prev = NULL;\
+    while (i != NULL) { prev = i; i = i->next; }\
+    if (prev == NULL) { _config->field = (current_var); }\
+    else { prev->next = (current_var); }\
+    type *ret = current_var;\
+    current_var = NULL;\
+    return ret;\
+}
+
+#define NEW_LIST_ELEMENT_FUNC(type, funcname, parent_type, parent_var, field) type *funcname() {\
+    parent_type *parent = (parent_var);\
+    type *new_element = (type *) malloc(sizeof(type));\
+    type *i = parent->field, *prev = NULL;\
+    while (i != NULL) { prev = i; i = i->next; }\
+    if (prev == NULL) { parent->field = new_element; }\
+    else { prev->next = new_element; };\
+    new_element->next = NULL;\
+    return new_element;\
+}
 
 void start_config() {
     _config = (apermon_config *) malloc(sizeof(apermon_config));
     _current_listen = _config->listens = NULL;
     _current_agent = _config->agents = NULL;
+    _current_interface = _config->interfaces = NULL;
     _current_trigger = _config->triggers = NULL;
 
     memset(&_gai_hints, 0, sizeof(struct addrinfo));
@@ -46,22 +79,10 @@ apermon_config *get_config() {
     return _config;
 }
 
+static NEW_LIST_ELEMENT_FUNC(apermon_config_listens, new_listen_internal, apermon_config, _config, listens);
+
 apermon_config_listens *new_listen() {
-    apermon_config_listens *l = _config->listens, *prev = NULL;
-    while (l != NULL) {
-        prev = l;
-        l = l->next;
-    }
-
-    if (prev == NULL) {
-        _current_listen = _config->listens = (apermon_config_listens *) malloc(sizeof(apermon_config_listens));
-    } else {
-        _current_listen = prev->next = (apermon_config_listens *) malloc(sizeof(apermon_config_listens));
-    }
-
-    _current_listen->next = NULL;
-
-    return _current_listen;
+    return _current_listen = new_listen_internal();
 }
 
 apermon_config_listens *end_listen(const char *host, uint16_t port) {
@@ -79,60 +100,11 @@ apermon_config_listens *end_listen(const char *host, uint16_t port) {
     return _current_listen;
 }
 
-apermon_config_agents *get_current_agent() {
-    if (_current_agent == NULL) {
-        _current_agent = (apermon_config_agents *) malloc(sizeof(apermon_config_agents));
-        memset(_current_agent, 0, sizeof(apermon_config_agents));
-    }
+GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_agents, get_current_agent, _current_agent);
 
-    return _current_agent;
-}
+END_NAMED_STRUCT_FUNC(apermon_config_agents, end_agent, _current_agent, agents);
 
-apermon_config_agents *end_agent(const char *agent_name) {
-    if (_current_agent == NULL) {
-        return NULL;
-    }
-
-    _current_agent->name = strdup(agent_name);
-
-    apermon_config_agents *a = _config->agents, *prev = NULL;
-    while (a != NULL) {
-        prev = a;
-        a = a->next;
-    }
-
-    if (prev == NULL) {
-        _config->agents = _current_agent;
-    } else {
-        prev->next = _current_agent;
-    }
-
-    apermon_config_agents *ret = _current_agent;
-    _current_agent = NULL;
-
-    return ret;
-}
-
-apermon_config_agent_addresses *new_address() {
-    apermon_config_agents *agent = get_current_agent();
-    apermon_config_agent_addresses *new_addr = (apermon_config_agent_addresses *) malloc(sizeof(apermon_config_agent_addresses));
-
-    apermon_config_agent_addresses *a = agent->addresses, *prev = NULL;
-    while (a != NULL) {
-        prev = a;
-        a = a->next;
-    }
-
-    if (prev == NULL) {
-        agent->addresses = new_addr;
-    } else {
-        prev->next = new_addr;
-    }
-
-    new_addr->next = NULL;
-
-    return new_addr;
-}
+NEW_LIST_ELEMENT_FUNC(apermon_config_agent_addresses, new_address, apermon_config_agents, get_current_agent(), addresses);
 
 apermon_config_agent_addresses *add_agent_address_inet(const struct in_addr *addr) {
     apermon_config_agent_addresses *a = new_address();
@@ -148,4 +120,18 @@ apermon_config_agent_addresses *add_agent_address_inet6(const struct in6_addr *a
     memcpy(&a->inet6, addr, sizeof(a->inet6));
 
     return a;
+}
+
+GET_CURRENT_NAMED_STRUCT_FUNC(apermon_interfaces, get_current_interface, _current_interface);
+
+END_NAMED_STRUCT_FUNC(apermon_interfaces, end_interface, _current_interface, interfaces);
+
+NEW_LIST_ELEMENT_FUNC(apermon_ifindexes, new_ifindex, apermon_interfaces, get_current_interface(), ifindexes);
+
+apermon_ifindexes *add_ifindex(const char *agent, uint32_t ifindex) {
+    apermon_ifindexes *i = new_ifindex();
+    i->agent = strdup(agent);
+    i->ifindex = ifindex;
+
+    return i;
 }
