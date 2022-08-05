@@ -1,4 +1,6 @@
+apermon
 *.o
 *.tab.c
 *.tab.h
 *.yy.c
+.vscode
