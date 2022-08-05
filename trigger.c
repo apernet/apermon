@@ -4,11 +4,6 @@
 #include "flow.h"
 #include "condition.h"
 
-int init_trigger(apermon_config_triggers *config) {
-    // todo
-    return -1;
-}
-
 int run_trigger(const apermon_config_triggers *config, const apermon_flows *flows) {
     apermon_context *ctx = config->ctx;
     

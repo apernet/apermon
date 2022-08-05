@@ -2,6 +2,7 @@
 #define APERMON_SFLOW_H
 #include <stdint.h>
 #include <unistd.h>
+#include "config.h"
 
 /* infomation types */
 typedef uint32_t net_uint32_t;
@@ -105,6 +106,7 @@ typedef struct _sflow_parsed {
 ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **output);
 void free_sflow(sflow_parsed *parsed_pkt);
 
+void sflow_use_config(const apermon_config *config);
 ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len);
 
 #endif // APERMON_SFLOW_H

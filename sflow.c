@@ -3,6 +3,9 @@
 #include "sflow.h"
 #include "log.h"
 #include "extract.h"
+#include "trigger.h"
+
+static const apermon_config *_config;
 
 ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **output) {
     const uint8_t *ptr = packet;
@@ -168,10 +171,16 @@ void free_sflow(sflow_parsed *parsed_pkt) {
     free(parsed_pkt);
 }
 
+void sflow_use_config(const apermon_config *config) {
+    _config = config;
+}
+
 ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
     sflow_parsed *parsed = NULL;
     apermon_flows *flows = NULL;
     ssize_t ret;
+
+    apermon_config_triggers *trigger = _config->triggers;
 
     char agent_addr[INET6_ADDRSTRLEN + 1];
 
@@ -181,7 +190,11 @@ ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
         return ret;
     }
 
-    extract_flows(parsed, &flows);
+    ret = extract_flows(parsed, &flows);
+
+    if (ret < 0) {
+        return ret;
+    }
 
     if (flows->agent_af == SFLOW_AF_INET) {
         inet_ntop(AF_INET, &flows->agent_inet, agent_addr, sizeof(agent_addr));
@@ -190,6 +203,11 @@ ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
     }
     
     log_debug("sflow packet from %s\n", agent_addr);
+
+    while (trigger != NULL) {
+        run_trigger(trigger, flows);
+        trigger = trigger->next;
+    }
 
     free_apermon_flows(flows);
     free_sflow(parsed);

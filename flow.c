@@ -33,7 +33,18 @@ static void finalize_aggergration(apermon_aggregated_flow **as, size_t n, uint32
     }
 }
 
-static void check_trigger(const apermon_config_triggers *t, apermon_aggregated_flow **as, size_t n) {
+static void check_trigger(const apermon_config_triggers *t, apermon_aggregated_flow **fs, size_t n) {
+    // debug only now - prints aggr'd flows
+
+    size_t i;
+    apermon_aggregated_flow *flow;
+
+    for (i = 0; i < n; ++i) {
+        flow = fs[i];
+        if (flow->flow_af == SFLOW_AF_INET) {
+            log_debug("%u: %lu bps, %lu pps\n", flow->inet, running_average_bps(flow), running_average_pps(flow));
+        }
+    }
 }
 
 static apermon_aggregated_flow *aggergrate_flows_host_inet(apermon_hash *ah, uint32_t addr, const apermon_flow_record *flow) {
