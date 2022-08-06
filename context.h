@@ -14,7 +14,7 @@ typedef struct _apermon_context {
     apermon_cond_selected_flows *selected_flows_tail;
 
     // context (persistent) info
-    apermon_hash *aggr_hash; /* hashmap: inet/inet6 to apermon_aggregated_flow */
+    apermon_hash *aggr_hash; /* hashmap: inet/inet6 */
     apermon_config_triggers *trigger_config;
 } apermon_context;
 
