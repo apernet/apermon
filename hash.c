@@ -15,7 +15,7 @@ static inline uint32_t hash128(const uint8_t *buf) {
     return res & HASH_MASK;
 }
 
-static inline apermon_hash_item *_hash_find(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len, apermon_hash_item **last) {
+static inline void *_hash_find(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len, apermon_hash_item **last) {
     apermon_hash_item *item = tbl->items[hashed_key], *target = NULL, *prev = NULL;
 
     while (item != NULL) {
@@ -39,7 +39,7 @@ static inline apermon_hash_item *_hash_find(apermon_hash *tbl, uint32_t hashed_k
     return target;
 }
 
-static inline apermon_hash_item *_hash_add_or_update(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len, void *value, void **old_value) {
+static inline void _hash_add_or_update(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len, void *value, void **old_value) {
     apermon_hash_item *target, *prev = NULL;
 
     target = _hash_find(tbl, hashed_key, key, key_len, &prev);
@@ -47,8 +47,7 @@ static inline apermon_hash_item *_hash_add_or_update(apermon_hash *tbl, uint32_t
     if (target != NULL) {
         *old_value = target->value;
         target->value = value;
-
-        return target;
+        return;
     }
 
     apermon_hash_item *item = (apermon_hash_item *) malloc(sizeof(apermon_hash_item));
@@ -73,24 +72,26 @@ static inline apermon_hash_item *_hash_add_or_update(apermon_hash *tbl, uint32_t
     } else {
         prev->next = item;
     }
-
-    return item;
 }
 
-apermon_hash_item *hash32_add_or_update(apermon_hash *tbl, const uint32_t *key, void *value, void **old_value) {
+void hash32_add_or_update(apermon_hash *tbl, const uint32_t *key, void *value, void **old_value) {
     return _hash_add_or_update(tbl, hash32(key), (uint8_t *) key, sizeof(uint32_t), value, old_value);
 }
 
-apermon_hash_item *hash128_add_or_update(apermon_hash *tbl, const uint8_t *key, void *value, void **old_value) {
+void hash128_add_or_update(apermon_hash *tbl, const uint8_t *key, void *value, void **old_value) {
     return _hash_add_or_update(tbl, hash128(key), key, 16 * sizeof(uint8_t), value, old_value);
 }
 
-apermon_hash_item *hash32_find(apermon_hash *tbl, const uint32_t *key) {
-    return _hash_find(tbl, hash32(key), (uint8_t *) key, sizeof(uint32_t), NULL);
+void *hash32_find(apermon_hash *tbl, const uint32_t *key) {
+    apermon_hash_item *item = _hash_find(tbl, hash32(key), (uint8_t *) key, sizeof(uint32_t), NULL);
+
+    return item == NULL ? NULL : item->value;
 }
 
-apermon_hash_item *hash128_find(apermon_hash *tbl, const uint8_t *key) {
-    return _hash_find(tbl, hash128(key), key, 16 * sizeof(uint8_t), NULL);
+void *hash128_find(apermon_hash *tbl, const uint8_t *key) {
+    apermon_hash_item *item = _hash_find(tbl, hash128(key), key, 16 * sizeof(uint8_t), NULL);
+
+    return item == NULL ? NULL : item->value;
 }
 
 apermon_hash *new_hash() {
