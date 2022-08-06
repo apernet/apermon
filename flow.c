@@ -33,13 +33,13 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
     }
 }
 
-static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon_flows *flows, apermon_hash *agent_hash, uint64_t current_pkts, uint64_t current_bytes) {
+static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon_flows *flows, apermon_hash *agent_hash, uint64_t current_bytes, uint64_t current_pkts) {
     apermon_aggregated_agent_data *ad, *oldval = NULL;
 
     if (flows->agent_af == SFLOW_AF_INET) {
-        ad = (apermon_aggregated_agent_data *) hash32_find(agent_hash, &flows->agent_inet);
+        ad = hash32_find(agent_hash, &flows->agent_inet);
     } else if (flows->agent_af == SFLOW_AF_INET) {
-        ad = (apermon_aggregated_agent_data *) hash128_find(agent_hash, flows->agent_inet6);
+        ad = hash128_find(agent_hash, flows->agent_inet6);
     } else {
         log_error("bad agent af %d\n", flows->agent_af);
         return NULL;
@@ -53,9 +53,9 @@ static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon
     ad->current_pkts += current_pkts;
 
     if (flows->agent_af == SFLOW_AF_INET) {
-        ad = (apermon_aggregated_agent_data *) hash32_add_or_update(agent_hash, &flows->agent_inet, ad, (void **) &oldval);
+        hash32_add_or_update(agent_hash, &flows->agent_inet, ad, (void **) &oldval);
     } else if (flows->agent_af == SFLOW_AF_INET) {
-        ad = (apermon_aggregated_agent_data *) hash128_add_or_update(agent_hash, flows->agent_inet6, ad, (void **) &oldval);
+        hash128_add_or_update(agent_hash, flows->agent_inet6, ad, (void **) &oldval);
     } 
 
     if (oldval != ad && oldval != NULL) {
@@ -66,12 +66,13 @@ static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon
 }
 
 static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context *ctx, uint32_t addr, const apermon_flow_record *flow) {
-    apermon_aggregated_flow *af = (apermon_aggregated_flow *) hash32_find(ctx->aggr_hash, &addr), *oldval = NULL;
+    apermon_aggregated_flow *af = hash32_find(ctx->aggr_hash, &addr), *oldval = NULL;
 
     if (af == NULL) {
         af = new_aflow();
     }
 
+    af->dirty = 1;
     af->flow_af = SFLOW_AF_INET;
     af->inet = addr;
 
@@ -85,12 +86,13 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context
 }
 
 static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_context *ctx, const uint8_t *addr, const apermon_flow_record *flow) {
-    apermon_aggregated_flow *af = (apermon_aggregated_flow *) hash128_find(ctx->aggr_hash, addr), *oldval = NULL;
+    apermon_aggregated_flow *af = hash128_find(ctx->aggr_hash, addr), *oldval = NULL;
 
     if (af == NULL) {
         af = new_aflow();
     }
 
+    af->dirty =1;
     af->flow_af = SFLOW_AF_INET6;
     memcpy(af->inet6, addr, sizeof(af->inet6));
 
@@ -165,11 +167,11 @@ int aggergrate_flows(apermon_context *ctx) {
     } else if (t->aggregator == APERMON_AGGREGATOR_NET) {
         ret = aggergrate_flows_net(ctx);
     } else {
-        log_error("internal error: unknown aggregator %d\n", ctx->trigger_config->aggregator);
+        log_error("internal error: unknown aggregator %d in trigger %s\n", ctx->trigger_config->aggregator, ctx->trigger_config->name);
     }
 
     if (ret < 0) {
-        log_error("internal error: failed to aggergrate_flows.\n");
+        log_error("internal error: failed to aggergrate_flows (trigger: %s).\n", ctx->trigger_config->name);
     }
 
     return ret;
@@ -220,6 +222,7 @@ uint64_t running_average_bps(const apermon_aggregated_flow *af) {
         }
 
         data_count += RUNNING_AVERAGE_SIZE;
+        a = a->next;
     }
 
     return sum / data_count;
@@ -238,6 +241,7 @@ uint64_t running_average_pps(const apermon_aggregated_flow *af) {
         }
 
         data_count += RUNNING_AVERAGE_SIZE;
+        a = a->next;
     }
 
     return sum / data_count;

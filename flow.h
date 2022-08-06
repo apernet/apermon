@@ -21,6 +21,8 @@ typedef struct _apermon_aggregated_agent_data {
 } apermon_aggregated_agent_data;
 
 typedef struct _apermon_aggregated_flow {
+    int dirty;
+
     uint32_t flow_af; /* enum sflow_af */
 
     union {
