@@ -19,6 +19,11 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
             continue;
         }
 
+        if (af->last_uptime == now) {
+            log_warn("last update is the same as now - retr / replay attack?\n");
+            continue;
+        }
+
         dt = now - af->last_uptime;
         af->pps[af->running_average_index] += af->current_pkts * 1000 / dt;
         af->bps[af->running_average_index] += af->current_bytes * 8 * 1000 / dt;
