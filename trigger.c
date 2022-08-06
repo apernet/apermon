@@ -6,17 +6,19 @@
 
 int run_trigger(const apermon_config_triggers *config, const apermon_flows *flows) {
     apermon_context *ctx = config->ctx;
-    
+    apermon_hash_item *aggr;
+    apermon_aggregated_flow *af;
+
     ctx->current_flows = flows;
 
     const apermon_flow_record *r = flows->records;
 
     while (r != NULL) {
-        r = r->next;
-
-        if (cond_list(r, config->conds)) {
+        if (config->conds == NULL || cond_list(r, config->conds)) {
             select_flow(ctx, r);
         }
+
+        r = r->next;
     }
 
     if (aggergrate_flows(ctx) < 0) {
@@ -24,6 +26,30 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     }
 
     free_selected_flows(ctx);
+    
+    aggr = ctx->aggr_hash->head;
+    while (aggr != NULL) {
+        af = (apermon_aggregated_flow *) aggr->value;
+
+        if (!af->dirty) {
+            aggr = aggr->iter_next;
+            continue;
+        }
+
+        af->dirty = 0;
+
+
+        char addr[INET6_ADDRSTRLEN + 1];
+        if (flows->agent_af == SFLOW_AF_INET) {
+            inet_ntop(AF_INET, &af->inet, addr, sizeof(addr));
+        } else {
+            inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
+        }
+
+        log_debug("%s: %lu bps, %lu pps\n", addr, running_average_bps(af), running_average_pps(af));
+
+        aggr = aggr->iter_next;
+    }
 
     return 0;
 }
