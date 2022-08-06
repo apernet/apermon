@@ -106,7 +106,7 @@ typedef struct _sflow_parsed {
 ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **output);
 void free_sflow(sflow_parsed *parsed_pkt);
 
-void sflow_use_config(const apermon_config *config);
+void init_sflow(const apermon_config *config);
 ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len);
 
 #endif // APERMON_SFLOW_H

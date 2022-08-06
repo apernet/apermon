@@ -171,23 +171,23 @@ void free_sflow(sflow_parsed *parsed_pkt) {
     free(parsed_pkt);
 }
 
-void sflow_use_config(const apermon_config *config) {
+void init_sflow(const apermon_config *config) {
     _config = config;
 }
 
 ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
     sflow_parsed *parsed = NULL;
     apermon_flows *flows = NULL;
-    ssize_t ret;
+    ssize_t ret, pased_len;
 
     apermon_config_triggers *trigger = _config->triggers;
 
     char agent_addr[INET6_ADDRSTRLEN + 1];
 
-    ret = parse_sflow(packet, packet_len, &parsed);
+    pased_len = parse_sflow(packet, packet_len, &parsed);
 
-    if (ret < 0) {
-        return ret;
+    if (pased_len < 0) {
+        return pased_len;
     }
 
     ret = extract_flows(parsed, &flows);
@@ -212,5 +212,5 @@ ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
     free_apermon_flows(flows);
     free_sflow(parsed);
 
-    return ret;
+    return pased_len;
 }
