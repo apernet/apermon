@@ -50,6 +50,10 @@ ifindexes {
     return IFINDEXES;
 }
 
+prefixes {
+    return PREFIXES;
+}
+
 \{ {
     return LBRACE;
 }
@@ -72,6 +76,10 @@ ifindexes {
 
 \. {
     return DOT;
+}
+
+\/ {
+    return SLASH;
 }
 
 ([0-9]{1,3}\.){3}[0-9]{1,3} {

@@ -2,6 +2,7 @@
 #define APERNET_CONFIG_INTERNAL_H
 #include <arpa/inet.h>
 #include "config.h"
+#include "prefix-list.h"
 
 void start_config();
 void end_config();
@@ -26,5 +27,9 @@ apermon_config_interfaces *end_interface(const char *ifname);
 
 apermon_config_ifindexes *new_ifindex();
 apermon_config_ifindexes *add_ifindex(const char *agent, uint32_t ifindex);
+
+apermon_prefix_lists *end_prefix_list(const char *name);
+apermon_prefix_lists *add_prefix_inet(const struct in_addr *addr, uint8_t prefix_len);
+apermon_prefix_lists *add_prefix_inet6(const struct in6_addr *addr, uint8_t prefix_len);
 
 #endif // APERNET_CONFIG_INTERNAL_H

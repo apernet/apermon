@@ -51,7 +51,7 @@ int cond_interface(const apermon_flow_record* record, const void* arg /* apermon
 }
 
 int cond_src(const apermon_flow_record* record, const void* arg /* apermon_pfx_list* */) {
-    const apermon_prefix_list *l = arg;
+    const apermon_prefix_lists *l = arg;
 
     while (l != NULL) {
         if (l->af != record->flow_af) {
@@ -77,7 +77,7 @@ int cond_src(const apermon_flow_record* record, const void* arg /* apermon_pfx_l
 }
 
 int cond_dst(const apermon_flow_record* record, const void* arg /* apermon_pfx_list* */) {
-    const apermon_prefix_list *l = arg;
+    const apermon_prefix_lists *l = arg;
 
     while (l != NULL) {
         if (l->af != record->flow_af) {
@@ -128,24 +128,32 @@ static void append_flow(apermon_context *ctx, const apermon_flow_record *flow) {
 
 void select_flow(apermon_context *ctx, const apermon_flow_record *flow) {
     const apermon_config_triggers *t = ctx->trigger_config;
-    
-    if (flow->flow_af == SFLOW_AF_INET) {
-        if ((t->flags & APERMON_TRIGGER_CHECK_INGRESS) && apermon_prefix_match_inet(t->prefixes, flow->dst_inet)) {
-            append_flow(ctx, flow);
-        } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && apermon_prefix_match_inet(t->prefixes, flow->src_inet)) {
-            append_flow(ctx, flow);
+    const apermon_prefix_list_set *ps = t->prefixes;
+    const apermon_prefix_lists *p;
+
+    while (ps != NULL) {
+        p = ps->prefix_list;
+        if (flow->flow_af == SFLOW_AF_INET) {
+            if ((t->flags & APERMON_TRIGGER_CHECK_INGRESS) && apermon_prefix_match_inet(p, flow->dst_inet)) {
+                append_flow(ctx, flow);
+            } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && apermon_prefix_match_inet(p, flow->src_inet)) {
+                append_flow(ctx, flow);
+            }
+        } else if (flow->flow_af == SFLOW_AF_INET6) {
+            if ((t->flags & APERMON_TRIGGER_CHECK_INGRESS) && apermon_prefix_match_inet6(p, flow->dst_inet6)) {
+                append_flow(ctx, flow);
+            } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && apermon_prefix_match_inet6(p, flow->src_inet6)) {
+                append_flow(ctx, flow);
+            }
+        } else {
+            log_error("bad af: %d\n", flow->flow_af);
         }
-    } else if (flow->flow_af == SFLOW_AF_INET6) {
-        if ((t->flags & APERMON_TRIGGER_CHECK_INGRESS) && apermon_prefix_match_inet6(t->prefixes, flow->dst_inet6)) {
-            append_flow(ctx, flow);
-        } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && apermon_prefix_match_inet6(t->prefixes, flow->src_inet6)) {
-            append_flow(ctx, flow);
-        }
-    } else {
-        log_error("bad af: %d\n", flow->flow_af);
-        return;
+
+        ps = ps->next;
     }
 }
+    
+
 
 void free_selected_flows(apermon_context *ctx) {
     apermon_cond_selected_flows *s = ctx->selected_flows, *prev = NULL;

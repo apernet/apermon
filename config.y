@@ -38,6 +38,7 @@
 %token SFLOW V5
 %token AGENTS ADDRESSES
 %token INTERFACES IFINDEXES DOT
+%token PREFIXES SLASH
 
 %token <u64> NUMBER
 %token <str> IDENT QUOTED_STRING
@@ -51,6 +52,22 @@ config_item
     : OPTIONS LBRACE options RBRACE
     | AGENTS LBRACE agent_list RBRACE
     | INTERFACES LBRACE iface_list RBRACE
+    | PREFIXES LBRACE prefix_list RBRACE
+
+prefix_list: prefixes | prefix_list prefixes
+
+prefixes: IDENT LBRACE prefix RBRACE {
+    ERR_IF_NULL(end_prefix_list($1));
+    free($1);
+}
+
+prefix
+    : IP SLASH NUMBER SEMICOLON {
+        ERR_IF_NULL(add_prefix_inet(&$1, $3));
+    }
+    | IP6 SLASH NUMBER SEMICOLON {
+        ERR_IF_NULL(add_prefix_inet6(&$1, $3));
+    }
 
 iface_list: iface | iface_list iface
 
