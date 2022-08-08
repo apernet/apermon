@@ -1,0 +1,159 @@
+# global options
+options {
+    listen 0.0.0.0 6343 sflow v5;   # listen for sflow v5 on 0.0.0.0:6343
+    listen 0.0.0.0 9001 sflow v5;   # you can listen multiple ports
+    min-ban-time 300;               # default min ban time for host/net
+}
+# define agnets to accept sflow packets from
+agents {
+    # agent name
+    qfx5110 {
+        # agent address - note that this is not the source address of the sflow
+        # packet, but the agent address in the sflow header.
+        addresses [ 10.89.64.117 ];
+    }
+}
+# optionally, define a list of network interfaces for filter matching
+interfaces {
+    # interface name
+    hkix {
+        # interface ifindexes - format "<agent_name>.<ifindex>"
+        ifindexes [ qfx5110.500 qfx5110.501 ];
+    }
+    eie {
+        ifindexes [ qfx5110.502 ];
+    }
+    telstra {
+        ifindexes [ qfx5110.503 ];
+    }
+    cug {
+        ifindexes [ qfx5110.504 ];
+    }
+    ctg {
+        ifindexes [ qfx5110.505 ];
+    }
+    cdn77 {
+        ifindexes [ qfx5110.510 ];
+    }
+}
+# define prefixes - use in various places later
+prefixes {
+    apernet-light {
+        103.152.34.0/24;
+    }
+    apernet-premium {
+        103.152.35.0/24;
+    }
+    no-ban {
+        103.152.35.1/32;
+    }
+}
+# define actions
+actions {
+    # action name
+    default {
+        # script to invoke
+        script "/opt/apermon/scripts/apernet-announce-blackhole.sh" {
+            # when to invoke the said script - possible values are: "ban" and
+            # "unban"
+            events [ ban ];
+        }
+        script "/opt/apermon/scripts/apernet-withdraw-blackhole.sh" {
+            events [ ban ];
+        }
+        script "/opt/apermon/scripts/send-email.sh" {
+            events [ ban unban ];
+        }
+    }
+    telstra-blackhole {
+        script "/opt/apermon/scripts/apernet-announce-telstra-blackhole.sh" {
+            events [ ban ];
+        }
+        script "/opt/apermon/scripts/apernet-withdraw-telstra-blackhole.sh" {
+            events [ ban ];
+        }
+        script "/opt/apermon/scripts/send-email.sh" {
+            events [ ban unban ];
+        }
+    }
+    ntp {
+        script "/opt/apermon/scripts/apernet-firewall-drop-ntp.sh" {
+            events [ ban ];
+        }
+        script "/opt/apermon/scripts/apernet-firewall-accept-ntp.sh" {
+            events [ unban ];
+        }
+        script "/opt/apermon/scripts/send-email.sh" {
+            events [ ban unban ];
+        }
+    }
+}
+# define triggers - when to do what
+triggers {
+    # trigger name
+    telstra-protect {
+        # networks to monitor
+        networks [ apernet-light apernet-premium ];
+
+        # directions of the traffic to monitor
+        directions [ ingress egress ];
+
+        # defines how to aggregate the traffic
+        # - host: aggregate by host (i.e., /32 or /128 for inet and inet6)
+        # - net: aggregate by net (networks defined above under "networks")
+        aggregate-type host;
+
+        # when to trigger the action
+        thresholds {
+            # trigger if the aggregate traffic exceeds 2.5gbps
+            bps 2.5g;
+        }
+
+        # optionally, deifne filters to filter traffic. possible terms are:
+        # - and { <term1>; <term2>; ... } - logical AND (all terms must match)
+        # - or { <term1>; <term2>; ... } - logical OR (match any terms)
+        # - not { <term1>; <term2>; ... } - logical NOT (all terms must not match)
+        # - in-interface <interface-name>; - match packets coming from the interface
+        # - out-interface <interface-name>; - match packets going to the interface
+        # - source <inet/inet6-address>; - match packets with the source address
+        # - destination <inet/inet6-address>; - match packets with the destination address
+        # - source-port <number>; - match packets with the source port
+        # - destination-port <number>; - match packets with the destination port
+        # - protocol <tcp/udp/number>; - match packets with the protocol
+        filter {
+            # filters {} assumes and if and/or/not are not the root term. i.e.,
+            # here both in-interface and destination must match.
+            in-interface telstra;
+            destination apernet-light;
+        }
+        # action to take when the trigger status changes
+        action telstra-blackhole;
+    }
+    apernet-light {
+        min-ban-time 600;
+        aggregate-type host;
+        networks [ apernet-light ];
+        directions [ ingress egress ];
+        filter {
+            not {
+                source no-ban;
+                destination no-ban;
+            }
+        }
+        thresholds {
+            pps 1m;
+            bps 1g;
+        }
+        action default;
+    }
+    ntp {
+        networks [ apernet-light apernet-premium ];
+        directions [ ingress ];
+        aggregate-type net;
+        filter {
+            protocol udp;
+            source-port 123;
+        }
+        action ntp;
+    }
+}
