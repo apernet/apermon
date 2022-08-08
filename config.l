@@ -54,6 +54,26 @@ prefixes {
     return PREFIXES;
 }
 
+actions {
+    return ACTIONS;
+}
+
+script {
+    return SCRIPT;
+}
+
+events {
+    return EVENTS;
+}
+
+ban {
+    return BAN;
+}
+
+unban {
+    return UNBAN;
+}
+
 \{ {
     return LBRACE;
 }

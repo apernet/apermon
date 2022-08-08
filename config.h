@@ -33,6 +33,20 @@ typedef struct _apermon_config_agents {
     struct _apermon_config_agents *next;
 } apermon_config_agents;
 
+typedef struct _apermon_config_ifindexes {
+    char *agent;
+    uint32_t ifindex;
+
+    struct _apermon_config_ifindexes *next;
+} apermon_config_ifindexes;
+
+typedef struct _apermon_config_interfaces {
+    char *name;
+    apermon_config_ifindexes *ifindexes;
+
+    struct _apermon_config_interfaces *next;
+} apermon_config_interfaces;
+
 #define APERMON_TRIGGER_CHECK_INGRESS   0b00000001
 #define APERMON_TRIGGER_CHECK_EGRESS    0b00000010
 #define APERMON_TRIGGER_SET_BAN_TIME    0b00000100
@@ -63,6 +77,24 @@ typedef struct _apermon_config_prefix_list_set {
     struct _apermon_config_prefix_list_set *next;
 } apermon_config_prefix_list_set;
 
+#define APERMON_SCRIPT_EVENT_BAN    0b00000001
+#define APERMON_SCRIPT_EVENT_UNBAN  0b00000010
+
+typedef struct _apermon_config_action_scripts {
+    char *name; // script path
+
+    uint8_t flags; /* bit 0: ban, 1: unban */
+
+    struct _apermon_config_action_scripts *next;
+} apermon_config_action_scripts;
+
+typedef struct _apermon_config_actions {
+    char *name;
+    apermon_config_action_scripts *scripts;
+
+    struct _apermon_config_actions *next;
+} apermon_config_actions;
+
 typedef struct _apermon_config_triggers {
     char *name;
 
@@ -84,25 +116,13 @@ typedef struct _apermon_config_triggers {
     struct _apermon_config_triggers *next;
 } apermon_config_triggers;
 
-typedef struct _apermon_config_ifindexes {
-    char *agent;
-    uint32_t ifindex;
-
-    struct _apermon_config_ifindexes *next;
-} apermon_config_ifindexes;
-
-typedef struct _apermon_config_interfaces {
-    char *name;
-    apermon_config_ifindexes *ifindexes;
-
-    struct _apermon_config_interfaces *next;
-} apermon_config_interfaces;
 
 typedef struct _apermon_config {
     apermon_config_listens *listens;
     apermon_config_agents *agents;
     apermon_config_interfaces *interfaces;
     apermon_config_prefix_list *prefix_lists;
+    apermon_config_actions *actions;
 
     apermon_config_triggers *triggers;
 

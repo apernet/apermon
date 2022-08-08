@@ -39,6 +39,7 @@
 %token AGENTS ADDRESSES
 %token INTERFACES IFINDEXES DOT
 %token PREFIXES SLASH
+%token ACTIONS SCRIPT EVENTS BAN UNBAN
 
 %token <u64> NUMBER
 %token <str> IDENT QUOTED_STRING
@@ -53,6 +54,35 @@ config_item
     | AGENTS LBRACE agent_list RBRACE
     | INTERFACES LBRACE iface_list RBRACE
     | PREFIXES LBRACE prefix_list RBRACE
+    | ACTIONS LBRACE action_list RBRACE
+
+action_list: action | action_list action
+
+action: IDENT LBRACE action_options RBRACE {
+    ERR_IF_NULL(end_action($1));
+}
+
+action_options: action_option | action_options action_option
+
+action_option
+    : SCRIPT QUOTED_STRING LBRACE script_options RBRACE {
+        ERR_IF_NULL(end_action_script($2));
+    }
+
+script_options: script_option | script_options script_option
+
+script_option
+    : EVENTS LBRACK script_events RBRACK SEMICOLON
+
+script_events: script_event | script_events script_event
+
+script_event
+    : BAN {
+        get_current_action_script()->flags |= APERMON_SCRIPT_EVENT_BAN;
+    }
+    | UNBAN {
+        get_current_action_script()->flags |= APERMON_SCRIPT_EVENT_UNBAN;
+    }
 
 prefix_list: prefixes | prefix_list prefixes
 

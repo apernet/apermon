@@ -14,6 +14,8 @@ static apermon_config_agents *_current_agent;
 static apermon_config_interfaces *_current_interface;
 static apermon_config_triggers *_current_trigger;
 static apermon_config_prefix_list *_current_prefix_list;
+static apermon_config_actions *_current_action;
+static apermon_config_action_scripts *_current_action_script;
 
 static const uint8_t CIDR_MASK_MAP6[129][16] = {
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -155,12 +157,13 @@ static const uint8_t CIDR_MASK_MAP6[129][16] = {
     return (current_var);\
 }
 
-#define END_NAMED_STRUCT_FUNC(type, funcname, current_var, field) type *funcname(const char *name) {\
+#define END_NAMED_STRUCT_FUNC(type, funcname, current_var, parent_type, parent_var, field) type *funcname(const char *name) {\
+    parent_type *parent = (parent_var);\
     if ((current_var) == NULL) { return NULL; }\
     (current_var)->name = strdup(name);\
-    type *i = _config->field, *prev = NULL;\
+    type *i = parent->field, *prev = NULL;\
     while (i != NULL) { prev = i; i = i->next; }\
-    if (prev == NULL) { _config->field = (current_var); }\
+    if (prev == NULL) { parent->field = (current_var); }\
     else { prev->next = (current_var); }\
     type *ret = current_var;\
     current_var = NULL;\
@@ -180,11 +183,15 @@ static const uint8_t CIDR_MASK_MAP6[129][16] = {
 
 void start_config() {
     _config = (apermon_config *) malloc(sizeof(apermon_config));
+    memset(_config, 0, sizeof(apermon_config));
+    
     _current_listen = _config->listens = NULL;
     _current_agent = _config->agents = NULL;
     _current_interface = _config->interfaces = NULL;
     _current_trigger = _config->triggers = NULL;
     _current_prefix_list = _config->prefix_lists = NULL;
+    _current_action = _config->actions = NULL;
+    _current_action_script = NULL;
 
     memset(&_gai_hints, 0, sizeof(struct addrinfo));
     _gai_hints.ai_family = AF_UNSPEC;
@@ -237,7 +244,7 @@ apermon_config_listens *end_listen(const char *host, uint16_t port) {
 
 GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_agents, get_current_agent, _current_agent);
 
-END_NAMED_STRUCT_FUNC(apermon_config_agents, end_agent, _current_agent, agents);
+END_NAMED_STRUCT_FUNC(apermon_config_agents, end_agent, _current_agent, apermon_config, _config, agents);
 
 NEW_LIST_ELEMENT_FUNC(apermon_config_agent_addresses, new_address, apermon_config_agents, get_current_agent(), addresses);
 
@@ -259,7 +266,7 @@ apermon_config_agent_addresses *add_agent_address_inet6(const struct in6_addr *a
 
 GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_interfaces, get_current_interface, _current_interface);
 
-END_NAMED_STRUCT_FUNC(apermon_config_interfaces, end_interface, _current_interface, interfaces);
+END_NAMED_STRUCT_FUNC(apermon_config_interfaces, end_interface, _current_interface, apermon_config, _config, interfaces);
 
 NEW_LIST_ELEMENT_FUNC(apermon_config_ifindexes, new_ifindex, apermon_config_interfaces, get_current_interface(), ifindexes);
 
@@ -273,7 +280,7 @@ apermon_config_ifindexes *add_ifindex(const char *agent, uint32_t ifindex) {
 
 GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_prefix_list, get_current_prefix_list, _current_prefix_list);
 
-END_NAMED_STRUCT_FUNC(apermon_config_prefix_list, end_prefix_list, _current_prefix_list, prefix_lists);
+END_NAMED_STRUCT_FUNC(apermon_config_prefix_list, end_prefix_list, _current_prefix_list, apermon_config, _config, prefix_lists);
 
 NEW_LIST_ELEMENT_FUNC(apermon_config_prefix_list_elements, new_prefix_list_element, apermon_config_prefix_list, get_current_prefix_list(), elements);
 
@@ -306,3 +313,11 @@ apermon_config_prefix_list_elements *add_prefix_inet6(const struct in6_addr *add
 
     return prefix;
 }
+
+GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_actions, get_current_action, _current_action);
+
+END_NAMED_STRUCT_FUNC(apermon_config_actions, end_action, _current_action, apermon_config, _config, actions);
+
+GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_action_scripts, get_current_action_script, _current_action_script);
+
+END_NAMED_STRUCT_FUNC(apermon_config_action_scripts, end_action_script, _current_action_script, apermon_config_actions, get_current_action(), scripts);
