@@ -29,9 +29,9 @@ apermon_config_ifindexes *new_ifindex();
 apermon_config_ifindexes *add_ifindex(const char *agent, uint32_t ifindex);
 
 apermon_config_prefix_list *end_prefix_list(const char *name);
-apermon_config_prefix_list_element *new_prefix_list_element();
+apermon_config_prefix_list_elements *new_prefix_list_element();
 
-apermon_config_prefix_list_element *add_prefix_inet(const struct in_addr *addr, uint8_t prefix_len);
-apermon_config_prefix_list_element *add_prefix_inet6(const struct in6_addr *addr, uint8_t prefix_len);
+apermon_config_prefix_list_elements *add_prefix_inet(const struct in_addr *addr, uint8_t prefix_len);
+apermon_config_prefix_list_elements *add_prefix_inet6(const struct in6_addr *addr, uint8_t prefix_len);
 
 #endif // APERNET_CONFIG_INTERNAL_H

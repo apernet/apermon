@@ -45,28 +45,28 @@ enum aggregator {
 typedef struct _apermon_cond_list apermon_cond_list;
 typedef struct _apermon_context apermon_context;
 
-typedef struct _apermon_config_prefix_list_element {
+typedef struct _apermon_config_prefix_list_elements {
     apermon_prefix *prefix;
-    struct _apermon_config_prefix_list_element *next;
-} apermon_config_prefix_list_element;
+    struct _apermon_config_prefix_list_elements *next;
+} apermon_config_prefix_list_elements;
 
 typedef struct _apermon_config_prefix_list {
     char *name;
-    apermon_config_prefix_list_element *elements;
+    apermon_config_prefix_list_elements *elements;
 
     struct _apermon_config_prefix_list *next;
 } apermon_config_prefix_list;
 
-typedef struct _apermon_prefix_list_set {
+typedef struct _apermon_config_prefix_list_set {
     char *candidate;
     const apermon_config_prefix_list *prefix_list;
-    struct _apermon_prefix_list_set *next;
-} apermon_prefix_list_set;
+    struct _apermon_config_prefix_list_set *next;
+} apermon_config_prefix_list_set;
 
 typedef struct _apermon_config_triggers {
     char *name;
 
-    apermon_prefix_list_set *prefixes; // owned by us
+    apermon_config_prefix_list_set *prefixes; // owned by us
     uint8_t flags; /* bit 0: ingress check, 1: egress check, 2: ban time override */
 
     enum aggregator aggregator;

@@ -6,20 +6,7 @@
 #include "log.h"
 
 int apermon_prefix_match_inet(const apermon_prefix* pfx, uint32_t addr) {
-    /*while (lst != NULL) {
-        if (lst->af != SFLOW_AF_INET) {
-            lst = lst->next;
-            continue;
-        }
-
-        if ((addr & lst->mask) == lst->inet) {
-            return 1;
-        }
-
-        lst = lst->next;
-    }*/
-
-    return addr & pfx->mask == pfx->inet;
+    return (addr & pfx->mask) == pfx->inet;
 }
 
 int apermon_prefix_match_inet6(const apermon_prefix* lst, const uint8_t *addr) {
@@ -28,7 +15,7 @@ int apermon_prefix_match_inet6(const apermon_prefix* lst, const uint8_t *addr) {
     return 0;
 }
 
-int apermon_prefix_list_match_inet(const apermon_config_prefix_list_element* lst, uint32_t addr) {
+int apermon_prefix_list_match_inet(const apermon_config_prefix_list_elements* lst, uint32_t addr) {
     const apermon_prefix *pfx;
 
     while (lst != NULL) {
@@ -44,9 +31,11 @@ int apermon_prefix_list_match_inet(const apermon_config_prefix_list_element* lst
 
         lst = lst->next;
     }
+
+    return 0;
 }
 
-int apermon_prefix_list_match_inet6(const apermon_config_prefix_list_element* lst, const uint8_t *addr) {
+int apermon_prefix_list_match_inet6(const apermon_config_prefix_list_elements* lst, const uint8_t *addr) {
     const apermon_prefix *pfx;
 
     while (lst != NULL) {
@@ -62,6 +51,8 @@ int apermon_prefix_list_match_inet6(const apermon_config_prefix_list_element* ls
 
         lst = lst->next;
     }
+
+    return 0;
 }
 
 apermon_prefix *new_prefix() {
