@@ -7,6 +7,8 @@ void free_config(apermon_config *config) {
     apermon_config_agent_addresses *addr = NULL, *prev_addr = NULL;
     apermon_config_interfaces *i = config->interfaces, *prev_i = NULL; 
     apermon_config_ifindexes *ifindex = NULL, *prev_ifindex = NULL;
+    apermon_config_prefix_list *pl = config->prefix_lists, *prev_pl = NULL;
+    apermon_config_prefix_list_elements *pe = NULL, *prev_pe = NULL;
     
     while (l != NULL) {
         if (prev_l != NULL) {
@@ -92,23 +94,40 @@ void free_config(apermon_config *config) {
         free(prev_i);
     }
 
-    free(config);
-}
-
-/*
-void free_prefix_list(apermon_prefix *list) {
-    apermon_prefix *ptr = list, *prev = NULL;
-
-    while (ptr != NULL) {
-        if (prev != NULL) {
-            free(prev);
+    while (pl != NULL) {
+        if (prev_pl != NULL) {
+            free(prev_pl);
         }
 
-        prev = ptr;
-        ptr = ptr->next;
+        if (pl->name != NULL) {
+            free(pl->name);
+        }
+
+        pe = pl->elements, prev_pe = NULL;
+        while (pe != NULL) {
+            if (prev_pe != NULL) {
+                free(prev_pe);
+            }
+
+            if (pe->prefix != NULL) {
+                free_prefix(pe->prefix);
+            }
+
+            prev_pe = pe;
+            pe = pe->next;
+        }
+
+        if (prev_pe != NULL) {
+            free(prev_pe);
+        }
+
+        prev_pl = pl;
+        pl = pl->next;
     }
 
-    if (prev != NULL) {
-        free(prev);
+    if (prev_pl != NULL) {
+        free(prev_pl);
     }
-}*/
+
+    free(config);
+}
