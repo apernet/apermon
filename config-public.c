@@ -9,6 +9,8 @@ void free_config(apermon_config *config) {
     apermon_config_ifindexes *ifindex = NULL, *prev_ifindex = NULL;
     apermon_config_prefix_list *pl = config->prefix_lists, *prev_pl = NULL;
     apermon_config_prefix_list_elements *pe = NULL, *prev_pe = NULL;
+    apermon_config_actions *ac = config->actions, *prev_ac = NULL;
+    apermon_config_action_scripts *as = NULL, *prev_as = NULL;
     
     while (l != NULL) {
         if (prev_l != NULL) {
@@ -127,6 +129,41 @@ void free_config(apermon_config *config) {
 
     if (prev_pl != NULL) {
         free(prev_pl);
+    }
+
+    while (ac != NULL) {
+        if (prev_ac != NULL) {
+            free(prev_ac);
+        }
+
+        if (ac->name != NULL) {
+            free(ac->name);
+        }
+        
+        as = ac->scripts, prev_as = NULL;
+        while (as != NULL) {
+            if (prev_as != NULL) {
+                free(prev_as);
+            }
+
+            if (as->name != NULL) {
+                free(as->name);
+            }
+            
+            prev_as = as;
+            as = as->next;
+        }
+        
+        if (prev_as != NULL) {
+            free(prev_as);
+        }
+        
+        prev_ac = ac;
+        ac = ac->next;
+    }
+
+    if (prev_ac != NULL) {
+        free(prev_ac);
     }
 
     free(config);

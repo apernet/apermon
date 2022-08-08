@@ -126,7 +126,7 @@ unban {
     size_t len = strlen(yytext);
     char *str = (char *) malloc(len - 1);
     memcpy(str, yytext + 1, len - 2);
-    str[len - 1] = '\0';
+    str[len - 2] = '\0';
 
     yylval.str = str;
     return QUOTED_STRING;

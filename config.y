@@ -60,6 +60,7 @@ action_list: action | action_list action
 
 action: IDENT LBRACE action_options RBRACE {
     ERR_IF_NULL(end_action($1));
+    free($1);
 }
 
 action_options: action_option | action_options action_option
@@ -67,6 +68,7 @@ action_options: action_option | action_options action_option
 action_option
     : SCRIPT QUOTED_STRING LBRACE script_options RBRACE {
         ERR_IF_NULL(end_action_script($2));
+        free($2);
     }
 
 script_options: script_option | script_options script_option
