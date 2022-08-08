@@ -13,7 +13,7 @@ static apermon_config_listens *_current_listen;
 static apermon_config_agents *_current_agent;
 static apermon_config_interfaces *_current_interface;
 static apermon_config_triggers *_current_trigger;
-static apermon_prefix_lists *_current_prefix_list;
+static apermon_config_prefix_list *_current_prefix_list;
 
 static const uint8_t CIDR_MASK_MAP6[129][16] = {
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -271,32 +271,38 @@ apermon_config_ifindexes *add_ifindex(const char *agent, uint32_t ifindex) {
     return i;
 }
 
-END_NAMED_STRUCT_FUNC(apermon_prefix_lists, end_prefix_list, _current_prefix_list, prefix_lists);
+GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_prefix_list, get_current_prefix_list, _current_prefix_list);
 
-apermon_prefix_lists *add_prefix_inet(const struct in_addr *addr, uint8_t prefix_len) {
+END_NAMED_STRUCT_FUNC(apermon_config_prefix_list, end_prefix_list, _current_prefix_list, prefix_lists);
+
+NEW_LIST_ELEMENT_FUNC(apermon_config_prefix_list_element, new_prefix_list_element, apermon_config_prefix_list, get_current_prefix_list(), elements);
+
+apermon_config_prefix_list_element *add_prefix_inet(const struct in_addr *addr, uint8_t prefix_len) {
     if (prefix_len > 32) {
         log_fatal("invalid inet prefix length: %u\n", prefix_len);
         return NULL;
     }
 
-    apermon_prefix_lists *prefix = new_prefix();
-    prefix->af = SFLOW_AF_INET;
-    prefix->inet = addr->s_addr;
-    prefix->mask = 0xffffffff << (32 - prefix_len);
+    apermon_config_prefix_list_element *prefix = new_prefix_list_element();
+    prefix->prefix = new_prefix();
+    prefix->prefix->af = SFLOW_AF_INET;
+    prefix->prefix->inet = addr->s_addr;
+    prefix->prefix->mask = 0xffffffff << (32 - prefix_len);
 
     return prefix;
 }
 
-apermon_prefix_lists *add_prefix_inet6(const struct in6_addr *addr, uint8_t prefix_len) {
+apermon_config_prefix_list_element *add_prefix_inet6(const struct in6_addr *addr, uint8_t prefix_len) {
     if (prefix_len > 128) {
         log_fatal("invalid inet6 prefix length: %u\n", prefix_len);
         return NULL;
     }
 
-    apermon_prefix_lists *prefix = new_prefix();
-    prefix->af = SFLOW_AF_INET6;
-    memcpy(&prefix->inet6, addr, sizeof(prefix->inet6));
-    memcpy(&prefix->mask6, CIDR_MASK_MAP6[prefix_len], sizeof(prefix->mask6));
+    apermon_config_prefix_list_element *prefix = new_prefix_list_element();
+    prefix->prefix = new_prefix();
+    prefix->prefix->af = SFLOW_AF_INET6;
+    memcpy(&prefix->prefix->inet6, addr, sizeof(prefix->prefix->inet6));
+    memcpy(&prefix->prefix->mask6, CIDR_MASK_MAP6[prefix_len], sizeof(prefix->prefix->mask6));
 
     return prefix;
 }

@@ -45,9 +45,21 @@ enum aggregator {
 typedef struct _apermon_cond_list apermon_cond_list;
 typedef struct _apermon_context apermon_context;
 
-typedef struct _apermon_prefix_list_set {
+typedef struct _apermon_config_prefix_list_element {
+    apermon_prefix *prefix;
+    struct _apermon_config_prefix_list_element *next;
+} apermon_config_prefix_list_element;
+
+typedef struct _apermon_config_prefix_list {
     char *name;
-    const apermon_prefix_lists *prefix_list;
+    apermon_config_prefix_list_element *elements;
+
+    struct _apermon_config_prefix_list *next;
+} apermon_config_prefix_list;
+
+typedef struct _apermon_prefix_list_set {
+    char *candidate;
+    const apermon_config_prefix_list *prefix_list;
     struct _apermon_prefix_list_set *next;
 } apermon_prefix_list_set;
 
@@ -90,7 +102,7 @@ typedef struct _apermon_config {
     apermon_config_listens *listens;
     apermon_config_agents *agents;
     apermon_config_interfaces *interfaces;
-    apermon_prefix_lists *prefix_lists;
+    apermon_config_prefix_list *prefix_lists;
 
     apermon_config_triggers *triggers;
 

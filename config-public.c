@@ -94,3 +94,21 @@ void free_config(apermon_config *config) {
 
     free(config);
 }
+
+/*
+void free_prefix_list(apermon_prefix *list) {
+    apermon_prefix *ptr = list, *prev = NULL;
+
+    while (ptr != NULL) {
+        if (prev != NULL) {
+            free(prev);
+        }
+
+        prev = ptr;
+        ptr = ptr->next;
+    }
+
+    if (prev != NULL) {
+        free(prev);
+    }
+}*/

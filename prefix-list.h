@@ -2,9 +2,9 @@
 #define APERMON_PREFIX_LSIT_H
 #include <stdint.h>
 
-typedef struct _apermon_prefix_lists {
-    char *name;
+typedef struct _apermon_config_prefix_list_element apermon_config_prefix_list_element;
 
+typedef struct _apermon_prefix {
     uint32_t af; /* enum sflow_af */
     union {
         uint32_t inet;
@@ -15,14 +15,15 @@ typedef struct _apermon_prefix_lists {
         uint32_t mask;
         uint8_t mask6[16];
     };
+} apermon_prefix;
 
-    struct _apermon_prefix_lists *next;
-} apermon_prefix_lists;
+int apermon_prefix_match_inet(const apermon_prefix* lst, uint32_t addr);
+int apermon_prefix_match_inet6(const apermon_prefix* lst, const uint8_t *addr);
 
-int apermon_prefix_match_inet(const apermon_prefix_lists* lst, uint32_t addr);
-int apermon_prefix_match_inet6(const apermon_prefix_lists* lst, const uint8_t *addr);
+int apermon_prefix_list_match_inet(const apermon_config_prefix_list_element* lst, uint32_t addr);
+int apermon_prefix_list_match_inet6(const apermon_config_prefix_list_element* lst, const uint8_t *addr);
 
-apermon_prefix_lists *new_prefix();
-void free_prefix_list(apermon_prefix_lists *list);
+apermon_prefix *new_prefix();
+void free_prefix(apermon_prefix *prefix);
 
 #endif // APERMON_PREFIX_LSIT_H
