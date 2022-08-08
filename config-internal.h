@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include "config.h"
 #include "prefix-list.h"
+#include "condition.h"
 
 void start_config();
 void end_config();
@@ -40,5 +41,10 @@ apermon_config_actions *end_action(const char *name);
 
 apermon_config_action_scripts *get_current_action_script();
 apermon_config_action_scripts *end_action_script(const char *name);
+
+apermon_cond_list *get_parent_cond_list();
+apermon_cond_list *get_current_cond_list();
+apermon_cond_list *end_cond_list(enum cond_type type);
+apermon_cond_list *append_cond_list(apermon_cond_list *to, apermon_cond_func func, const void *arg);
 
 #endif // APERNET_CONFIG_INTERNAL_H

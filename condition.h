@@ -32,10 +32,11 @@ typedef struct _apermon_cond_list {
 
 /* cond functions */
 
-int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond_list* */); /* eval cond-list */
-int cond_interface(const apermon_flow_record* record, const void* arg /* apermon_interface* */); /* keep only flows matching given interface */
-int cond_src(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements* */); /* keep only flow where dst in list */
-int cond_dst(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements* */); /* keep only flow where src in list */
+int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond_list** */); /* eval cond-list */
+int cond_in_interface(const apermon_flow_record* record, const void* arg /* apermon_config_interface** */); /* keep only flows matching given in interface */
+int cond_out_interface(const apermon_flow_record* record, const void* arg /* apermon_config_interface** */); /* keep only flows matching given out interface */
+int cond_src(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements** */); /* keep only flow where dst in list */
+int cond_dst(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements** */); /* keep only flow where src in list */
 int cond_proto(const apermon_flow_record* record, const void* arg /* uint8_t* */); /* keep only flow where l3proto in list */
 int cond_src_port(const apermon_flow_record* record, const void* arg /* uint16_t* */); /* keep only flow where src port in list */
 int cond_dst_port(const apermon_flow_record* record, const void* arg /* uint16_t* */); /* keep only flow where dst port in list */

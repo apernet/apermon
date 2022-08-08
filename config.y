@@ -7,6 +7,7 @@
     #include "config-internal.h"
     #include "log.h"
     #include "prefix-list.h"
+    #include "condition.h"
 
     extern int yylineno;
     extern int yylex();
@@ -107,18 +108,86 @@ threshold
 filter_list: filter | filter_list filter
 
 filter
-    : AND LBRACE filter_list RBRACE
-    | OR LBRACE filter_list RBRACE
-    | NOT LBRACE filter_list RBRACE
-    | SOURCE IDENT SEMICOLON
-    | DESTINATION IDENT SEMICOLON
-    | IN_INTERFACE IDENT SEMICOLON
-    | OUT_INTERFACE IDENT SEMICOLON
-    | PROTOCOL NUMBER SEMICOLON
-    | PROTOCOL TCP SEMICOLON
-    | PROTOCOL UDP SEMICOLON
-    | SOURCE_PORT NUMBER SEMICOLON
-    | DESTINATION_PORT NUMBER SEMICOLON
+    : AND LBRACE filter_list RBRACE {
+        apermon_cond_list *parent = get_parent_cond_list();
+        apermon_cond_list *current = end_cond_list(APERMON_COND_AND);
+        ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
+    }
+    | OR LBRACE filter_list RBRACE {
+        apermon_cond_list *parent = get_parent_cond_list();
+        apermon_cond_list *current = end_cond_list(APERMON_COND_OR);
+        ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
+    }
+    | NOT LBRACE filter_list RBRACE {
+        apermon_cond_list *parent = get_parent_cond_list();
+        apermon_cond_list *current = end_cond_list(APERMON_COND_NOT);
+        ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
+    }
+    | SOURCE IDENT SEMICOLON {
+        void *pfxlist = get_prefix_list($2);
+
+        if (pfxlist == NULL) {
+            store_retval(-1);
+            log_error("prefix list '%s' not defined.\n", $2);
+            YYERROR;
+        }
+
+        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_src, &pfxlist));
+        free($2);
+    }
+    | DESTINATION IDENT SEMICOLON {
+        void *pfxlist = get_prefix_list($2);
+
+        if (pfxlist == NULL) {
+            store_retval(-1);
+            log_error("prefix list '%s' not defined.\n", $2);
+            YYERROR;
+        }
+
+        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_dst, &pfxlist));
+        free($2);
+    }
+    | IN_INTERFACE IDENT SEMICOLON {
+        void *iface = get_interface($2);
+
+        if (iface == NULL) {
+            store_retval(-1);
+            log_error("interface '%s' not defined.\n", $2);
+            YYERROR;
+        }
+
+        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_in_interface, &iface));
+        free($2);
+    }
+    | OUT_INTERFACE IDENT SEMICOLON {
+        void *iface = get_interface($2);
+
+        if (iface == NULL) {
+            store_retval(-1);
+            log_error("interface '%s' not defined.\n", $2);
+            YYERROR;
+        }
+
+        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_out_interface, &iface));
+        free($2);
+    }
+    | PROTOCOL NUMBER SEMICOLON {
+        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &$2));
+    }
+    | PROTOCOL TCP SEMICOLON {
+        uint8_t proto = IPPROTO_TCP;
+        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &proto));
+    }
+    | PROTOCOL UDP SEMICOLON {
+        uint8_t proto = IPPROTO_UDP;
+        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &proto));
+    }
+    | SOURCE_PORT NUMBER SEMICOLON {
+        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_src_port, &$2));
+    }
+    | DESTINATION_PORT NUMBER SEMICOLON {
+        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_dst_port, &$2));
+    }
 
 action_list: action | action_list action
 

@@ -129,6 +129,9 @@ typedef struct _apermon_config {
     uint32_t min_ban_time;
 } apermon_config;
 
+apermon_config_interfaces *get_interface(const char *name);
+apermon_config_prefix_list *get_prefix_list(const char *name);
+
 int parse_config(const char *filename, apermon_config **config);
 void free_config(apermon_config *config);
 

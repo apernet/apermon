@@ -4,8 +4,8 @@
 #include "condition.h"
 #include "log.h"
 
-int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond_list* */) {
-    const apermon_cond_list *cl = arg;
+int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond_list** */) {
+    const apermon_cond_list *cl = *(apermon_cond_list **) arg;
     const apermon_cond_func_list *f = cl->funcs;
 
     if (cl->type == APERMON_COND_AND) {
@@ -45,13 +45,18 @@ int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond
     return 0;
 }
 
-int cond_interface(const apermon_flow_record* record, const void* arg /* apermon_interface* */) {
+int cond_in_interface(const apermon_flow_record* record, const void* arg /* apermon_config_interface** */) {
     // todo
     return 0;
 }
 
-int cond_src(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements* */) {
-    const apermon_config_prefix_list_elements *l = arg;
+int cond_out_interface(const apermon_flow_record* record, const void* arg /* apermon_config_interface** */) {
+    // todo
+    return 0;
+}
+
+int cond_src(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements** */) {
+    const apermon_config_prefix_list_elements *l = *(apermon_config_prefix_list_elements **) arg;
     const apermon_prefix *p;
 
     while (l != NULL) {
@@ -78,8 +83,8 @@ int cond_src(const apermon_flow_record* record, const void* arg /* apermon_confi
     return 0;
 }
 
-int cond_dst(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements* */) {
-    const apermon_config_prefix_list_elements *l = arg;
+int cond_dst(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements** */) {
+    const apermon_config_prefix_list_elements *l = *(apermon_config_prefix_list_elements **) arg;
     const apermon_prefix *p;
 
     while (l != NULL) {
