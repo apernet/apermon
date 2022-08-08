@@ -28,6 +28,7 @@
 %define parse.error verbose
 
 %union {
+    double d;
     uint64_t u64;
     struct in_addr in_addr;
     struct in6_addr in6_addr;
@@ -46,6 +47,7 @@
 %token FILTER AND OR NOT SOURCE DESTINATION IN_INTERFACE OUT_INTERFACE PROTOCOL TCP UDP SOURCE_PORT DESTINATION_PORT
 
 %token <u64> NUMBER
+%token <d> DOUBLE
 %token <str> IDENT QUOTED_STRING
 %token <in_addr> IP
 %token <in6_addr> IP6
@@ -69,13 +71,31 @@ trigger_options: trigger_option | trigger_options trigger_option
 
 trigger_option
     : NETWORKS LBRACK network_list RBRACK SEMICOLON
-    | MIN_BAN_TIME NUMBER SEMICOLON
+    | MIN_BAN_TIME NUMBER SEMICOLON {
+        get_current_trigger()->flags |=  APERMON_TRIGGER_SET_BAN_TIME;
+        get_current_trigger()->min_ban_time = $2;
+    }
     | DIRECTIONS LBRACK direction_list RBRACK SEMICOLON
-    | AGGREGATE_TYPE HOST SEMICOLON
-    | AGGREGATE_TYPE NET SEMICOLON
+    | AGGREGATE_TYPE HOST SEMICOLON {
+        get_current_trigger()->aggregator = APERMON_AGGREGATOR_HOST;
+    }
+    | AGGREGATE_TYPE NET SEMICOLON {
+        get_current_trigger()->aggregator = APERMON_AGGREGATOR_NET;
+    }
     | THRESHOLDS LBRACE threshold_list RBRACE
     | FILTER LBRACE filter_list RBRACE
-    | ACTION IDENT SEMICOLON
+    | ACTION IDENT SEMICOLON {
+        apermon_config_actions *action = get_action($2);
+
+        if (action == NULL) {
+            store_retval(-1);
+            log_error("unknown action '%s'\n", $2);
+            YYERROR;
+        }
+
+        get_current_trigger()->action = action;
+        free($2);
+    }
 
 network_list: network | network_list network
 
@@ -84,26 +104,58 @@ network: IDENT
 direction_list: direction | direction_list direction
 
 direction
-    : INGRESS
-    | EGRESS
+    : INGRESS {
+        get_current_trigger()->flags |= APERMON_TRIGGER_CHECK_INGRESS;
+    }
+    | EGRESS {
+        get_current_trigger()->flags |= APERMON_TRIGGER_CHECK_EGRESS;
+    }
 
 threshold_list: threshold | threshold_list threshold
 
 threshold
-    : BPS NUMBER SEMICOLON
-    | BPS NUMBER K SEMICOLON
-    | BPS NUMBER M SEMICOLON
-    | BPS NUMBER G SEMICOLON
-    | PPS NUMBER SEMICOLON
-    | PPS NUMBER K SEMICOLON
-    | PPS NUMBER M SEMICOLON
-    | PPS NUMBER G SEMICOLON
-    | BPS NUMBER DOT NUMBER K SEMICOLON
-    | BPS NUMBER DOT NUMBER M SEMICOLON
-    | BPS NUMBER DOT NUMBER G SEMICOLON
-    | PPS NUMBER DOT NUMBER K SEMICOLON
-    | PPS NUMBER DOT NUMBER M SEMICOLON
-    | PPS NUMBER DOT NUMBER G SEMICOLON
+    : BPS NUMBER SEMICOLON {
+        get_current_trigger()->bps = $2;
+    }
+    | BPS NUMBER K SEMICOLON {
+        get_current_trigger()->bps = $2 * 1000;
+    }
+    | BPS NUMBER M SEMICOLON {
+        get_current_trigger()->bps = $2 * 1000 * 1000;
+    }
+    | BPS NUMBER G SEMICOLON {
+        get_current_trigger()->bps = $2 * 1000 * 1000 * 1000;
+    }
+    | PPS NUMBER SEMICOLON {
+        get_current_trigger()->pps = $2;
+    }
+    | PPS NUMBER K SEMICOLON {
+        get_current_trigger()->pps = $2 * 1000;
+    }
+    | PPS NUMBER M SEMICOLON {
+        get_current_trigger()->pps = $2 * 1000 * 1000;
+    }
+    | PPS NUMBER G SEMICOLON {
+        get_current_trigger()->pps = $2 * 1000 * 1000 * 1000;
+    }
+    | BPS DOUBLE K SEMICOLON {
+        get_current_trigger()->bps = $2 * 1000;
+    }
+    | BPS DOUBLE M SEMICOLON {
+        get_current_trigger()->bps = $2 * 1000 * 1000;
+    }
+    | BPS DOUBLE G SEMICOLON {
+        get_current_trigger()->bps = $2 * 1000 * 1000 * 1000;
+    }
+    | PPS DOUBLE K SEMICOLON {
+        get_current_trigger()->pps = $2 * 1000;
+    }
+    | PPS DOUBLE M SEMICOLON {
+        get_current_trigger()->pps = $2 * 1000 * 1000;
+    }
+    | PPS DOUBLE G SEMICOLON {
+        get_current_trigger()->pps = $2 * 1000 * 1000 * 1000;
+    }
 
 filter_list: filter | filter_list filter
 

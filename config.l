@@ -224,6 +224,11 @@ action {
     return IP6;
 }
 
+[0-9]+\.[0-9]+ {
+    yylval.d = atof(yytext);
+    return DOUBLE;
+}
+
 [0-9]+ {
     yylval.u64 = atoi(yytext);
     return NUMBER;

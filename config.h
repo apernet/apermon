@@ -72,7 +72,6 @@ typedef struct _apermon_config_prefix_list {
 } apermon_config_prefix_list;
 
 typedef struct _apermon_config_prefix_list_set {
-    char *candidate;
     const apermon_config_prefix_list *prefix_list;
     struct _apermon_config_prefix_list_set *next;
 } apermon_config_prefix_list_set;
@@ -111,11 +110,10 @@ typedef struct _apermon_config_triggers {
     apermon_cond_list *conds; // owned by us
     apermon_context *ctx; // owned by us
 
-    // todo: action
+    const apermon_config_actions *action;
 
     struct _apermon_config_triggers *next;
 } apermon_config_triggers;
-
 
 typedef struct _apermon_config {
     apermon_config_listens *listens;
@@ -123,7 +121,6 @@ typedef struct _apermon_config {
     apermon_config_interfaces *interfaces;
     apermon_config_prefix_list *prefix_lists;
     apermon_config_actions *actions;
-
     apermon_config_triggers *triggers;
 
     uint32_t min_ban_time;
@@ -131,6 +128,7 @@ typedef struct _apermon_config {
 
 apermon_config_interfaces *get_interface(const char *name);
 apermon_config_prefix_list *get_prefix_list(const char *name);
+apermon_config_actions *get_action(const char *name);
 
 int parse_config(const char *filename, apermon_config **config);
 void free_config(apermon_config *config);

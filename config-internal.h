@@ -5,6 +5,8 @@
 #include "prefix-list.h"
 #include "condition.h"
 
+#define FILTER_RULES_MAX_NESTING 64
+
 void start_config();
 void end_config();
 
@@ -41,6 +43,9 @@ apermon_config_actions *end_action(const char *name);
 
 apermon_config_action_scripts *get_current_action_script();
 apermon_config_action_scripts *end_action_script(const char *name);
+
+apermon_config_triggers *get_current_trigger();
+apermon_config_triggers *end_trigger(const char *name);
 
 apermon_cond_list *get_parent_cond_list();
 apermon_cond_list *get_current_cond_list();

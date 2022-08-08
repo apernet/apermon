@@ -17,6 +17,9 @@ static apermon_config_prefix_list *_current_prefix_list;
 static apermon_config_actions *_current_action;
 static apermon_config_action_scripts *_current_action_script;
 
+static apermon_cond_list *_current_cond_list_stack[FILTER_RULES_MAX_NESTING];
+static size_t _current_cond_list_stack_pos;
+
 static const uint8_t CIDR_MASK_MAP6[129][16] = {
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
     {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -181,6 +184,10 @@ static const uint8_t CIDR_MASK_MAP6[129][16] = {
     return new_element;\
 }
 
+static void cond_list_stack_push(apermon_cond_list *list) {
+    _current_cond_list_stack[_current_cond_list_stack_pos++] = list;
+}
+
 void start_config() {
     _config = (apermon_config *) malloc(sizeof(apermon_config));
     memset(_config, 0, sizeof(apermon_config));
@@ -188,10 +195,13 @@ void start_config() {
     _current_listen = _config->listens = NULL;
     _current_agent = _config->agents = NULL;
     _current_interface = _config->interfaces = NULL;
-    _current_trigger = _config->triggers = NULL;
     _current_prefix_list = _config->prefix_lists = NULL;
     _current_action = _config->actions = NULL;
     _current_action_script = NULL;
+    _current_trigger = _config->triggers = NULL;
+
+    _current_cond_list_stack_pos = 0;
+    memset(_current_cond_list_stack, 0, sizeof(_current_cond_list_stack));
 
     memset(&_gai_hints, 0, sizeof(struct addrinfo));
     _gai_hints.ai_family = AF_UNSPEC;
@@ -204,8 +214,10 @@ void start_config() {
 }
 
 void end_config() {
-    if (_current_agent != NULL) {
-        free(_current_agent);
+    apermon_config_triggers *t = _config->triggers;
+    while (t != NULL) {
+        t->ctx = new_context();
+        t = t->next;
     }
 }
 
@@ -321,3 +333,7 @@ END_NAMED_STRUCT_FUNC(apermon_config_actions, end_action, _current_action, aperm
 GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_action_scripts, get_current_action_script, _current_action_script);
 
 END_NAMED_STRUCT_FUNC(apermon_config_action_scripts, end_action_script, _current_action_script, apermon_config_actions, get_current_action(), scripts);
+
+GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_triggers, get_current_trigger, _current_trigger);
+
+END_NAMED_STRUCT_FUNC(apermon_config_triggers, end_trigger, _current_trigger, apermon_config, _config, triggers);
