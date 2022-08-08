@@ -40,6 +40,9 @@
 %token INTERFACES IFINDEXES DOT
 %token PREFIXES SLASH
 %token ACTIONS SCRIPT EVENTS BAN UNBAN
+%token TRIGGERS NETWORKS DIRECTIONS INGRESS EGRESS AGGREGATE_TYPE HOST NET ACTION
+%token THRESHOLDS BPS PPS K M G
+%token FILTER AND OR NOT SOURCE DESTINATION IN_INTERFACE OUT_INTERFACE PROTOCOL TCP UDP SOURCE_PORT DESTINATION_PORT
 
 %token <u64> NUMBER
 %token <str> IDENT QUOTED_STRING
@@ -55,6 +58,67 @@ config_item
     | INTERFACES LBRACE iface_list RBRACE
     | PREFIXES LBRACE prefix_list RBRACE
     | ACTIONS LBRACE action_list RBRACE
+    | TRIGGERS LBRACE trigger_list RBRACE
+
+trigger_list: trigger | trigger_list trigger
+
+trigger: IDENT LBRACE trigger_options RBRACE
+
+trigger_options: trigger_option | trigger_options trigger_option
+
+trigger_option
+    : NETWORKS LBRACK network_list RBRACK SEMICOLON
+    | MIN_BAN_TIME NUMBER SEMICOLON
+    | DIRECTIONS LBRACK direction_list RBRACK SEMICOLON
+    | AGGREGATE_TYPE HOST SEMICOLON
+    | AGGREGATE_TYPE NET SEMICOLON
+    | THRESHOLDS LBRACE threshold_list RBRACE
+    | FILTER LBRACE filter_list RBRACE
+    | ACTION IDENT SEMICOLON
+
+network_list: network | network_list network
+
+network: IDENT
+
+direction_list: direction | direction_list direction
+
+direction
+    : INGRESS
+    | EGRESS
+
+threshold_list: threshold | threshold_list threshold
+
+threshold
+    : BPS NUMBER SEMICOLON
+    | BPS NUMBER K SEMICOLON
+    | BPS NUMBER M SEMICOLON
+    | BPS NUMBER G SEMICOLON
+    | PPS NUMBER SEMICOLON
+    | PPS NUMBER K SEMICOLON
+    | PPS NUMBER M SEMICOLON
+    | PPS NUMBER G SEMICOLON
+    | BPS NUMBER DOT NUMBER K SEMICOLON
+    | BPS NUMBER DOT NUMBER M SEMICOLON
+    | BPS NUMBER DOT NUMBER G SEMICOLON
+    | PPS NUMBER DOT NUMBER K SEMICOLON
+    | PPS NUMBER DOT NUMBER M SEMICOLON
+    | PPS NUMBER DOT NUMBER G SEMICOLON
+
+filter_list: filter | filter_list filter
+
+filter
+    : AND LBRACE filter_list RBRACE
+    | OR LBRACE filter_list RBRACE
+    | NOT LBRACE filter_list RBRACE
+    | SOURCE IDENT SEMICOLON
+    | DESTINATION IDENT SEMICOLON
+    | IN_INTERFACE IDENT SEMICOLON
+    | OUT_INTERFACE IDENT SEMICOLON
+    | PROTOCOL NUMBER SEMICOLON
+    | PROTOCOL TCP SEMICOLON
+    | PROTOCOL UDP SEMICOLON
+    | SOURCE_PORT NUMBER SEMICOLON
+    | DESTINATION_PORT NUMBER SEMICOLON
 
 action_list: action | action_list action
 

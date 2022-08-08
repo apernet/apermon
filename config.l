@@ -74,6 +74,118 @@ unban {
     return UNBAN;
 }
 
+triggers {
+    return TRIGGERS;
+}
+
+networks {
+    return NETWORKS;
+}
+
+directions {
+    return DIRECTIONS;
+}
+
+ingress {
+    return INGRESS;
+}
+
+egress {
+    return EGRESS;
+}
+
+aggregate-type {
+    return AGGREGATE_TYPE;
+}
+
+host {
+    return HOST;
+}
+
+net {
+    return NET;
+}
+
+thresholds {
+    return THRESHOLDS;
+}
+
+bps {
+    return BPS;
+}
+
+pps {
+    return PPS;
+}
+
+k {
+    return K;
+}
+
+m {
+    return M;
+}
+
+g {
+    return G;
+}
+
+filter {
+    return FILTER;
+}
+
+and {
+    return AND;
+}
+
+or {
+    return OR;
+}
+
+not {
+    return NOT;
+}
+
+source {
+    return SOURCE;
+}
+
+destination {
+    return DESTINATION;
+}
+
+in-interface {
+    return IN_INTERFACE;
+}
+
+out-interface {
+    return OUT_INTERFACE;
+}
+
+protocol {
+    return PROTOCOL;
+}
+
+tcp {
+    return TCP;
+}
+
+udp {
+    return UDP;
+}
+
+source-port {
+    return SOURCE_PORT;
+}
+
+destination-port {
+    return DESTINATION_PORT;
+}
+
+action {
+    return ACTION;
+}
+
 \{ {
     return LBRACE;
 }
