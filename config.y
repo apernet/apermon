@@ -33,6 +33,16 @@
     struct in_addr in_addr;
     struct in6_addr in6_addr;
     char *str;
+
+    apermon_config_listens *listen;
+    apermon_config_agents *agent;
+    apermon_config_agent_addresses *agent_address;
+    apermon_config_interfaces *interface;
+    apermon_config_ifindexes *ifindex;
+    apermon_config_prefix_lists *prefix_list;
+    apermon_config_prefix_list_elements *prefix_list_element;
+    apermon_config_actions *action;
+    apermon_config_action_scripts *action_script;
 }
 
 %token OPTIONS LISTEN MIN_BAN_TIME
@@ -52,15 +62,33 @@
 %token <in_addr> IP
 %token <in6_addr> IP6
 
+%type <listen> listen_args option_item_listens option_item_listen
+%type <agent> agent agent_list
+%type <agent_address> agent_address agent_addresses
+%type <interface> iface_options iface iface_list
+%type <ifindex> iface_index iface_indexes 
+%type <prefix_list> prefix_list prefixes
+%type <prefix_list_element> prefix prefix_elements
+%type <action> action action_list
+%type <action_script> action_script action_scripts
+
 %%
 config: config_item | config config_item
 
 config_item
     : OPTIONS LBRACE options RBRACE
-    | AGENTS LBRACE agent_list RBRACE
-    | INTERFACES LBRACE iface_list RBRACE
-    | PREFIXES LBRACE prefix_list RBRACE
-    | ACTIONS LBRACE action_list RBRACE
+    | AGENTS LBRACE agent_list RBRACE {
+        get_config()->agents = $3;
+    }
+    | INTERFACES LBRACE iface_list RBRACE {
+        get_config()->interfaces = $3;
+    }
+    | PREFIXES LBRACE prefix_list RBRACE {
+        get_config()->prefix_lists = $3;
+    }
+    | ACTIONS LBRACE action_list RBRACE {
+        get_config()->actions = $3;
+    }
     | TRIGGERS LBRACE trigger_list RBRACE
 
 trigger_list: trigger | trigger_list trigger
@@ -111,7 +139,7 @@ network: IDENT {
         YYERROR;
     }
 
-    ERR_IF_NULL(add_trigger_network(pfxlist));
+    // ERR_IF_NULL(add_trigger_network(pfxlist));
     free($1);
 }
 
@@ -175,19 +203,19 @@ filter_list: filter | filter_list filter
 
 filter
     : AND LBRACE filter_list RBRACE {
-        apermon_cond_list *parent = get_parent_cond_list();
-        apermon_cond_list *current = end_cond_list(APERMON_COND_AND);
-        ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
+        // apermon_cond_list *parent = get_parent_cond_list();
+        // apermon_cond_list *current = end_cond_list(APERMON_COND_AND);
+        // ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
     }
     | OR LBRACE filter_list RBRACE {
-        apermon_cond_list *parent = get_parent_cond_list();
-        apermon_cond_list *current = end_cond_list(APERMON_COND_OR);
-        ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
+        // apermon_cond_list *parent = get_parent_cond_list();
+        // apermon_cond_list *current = end_cond_list(APERMON_COND_OR);
+        // ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
     }
     | NOT LBRACE filter_list RBRACE {
-        apermon_cond_list *parent = get_parent_cond_list();
-        apermon_cond_list *current = end_cond_list(APERMON_COND_NOT);
-        ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
+        // apermon_cond_list *parent = get_parent_cond_list();
+        // apermon_cond_list *current = end_cond_list(APERMON_COND_NOT);
+        // ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
     }
     | SOURCE IDENT SEMICOLON {
         void *pfxlist = get_prefix_list($2);
@@ -198,7 +226,7 @@ filter
             YYERROR;
         }
 
-        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_src, &pfxlist));
+        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_src, &pfxlist));
         free($2);
     }
     | DESTINATION IDENT SEMICOLON {
@@ -210,7 +238,7 @@ filter
             YYERROR;
         }
 
-        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_dst, &pfxlist));
+        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_dst, &pfxlist));
         free($2);
     }
     | IN_INTERFACE IDENT SEMICOLON {
@@ -222,7 +250,7 @@ filter
             YYERROR;
         }
 
-        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_in_interface, &iface));
+        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_in_interface, &iface));
         free($2);
     }
     | OUT_INTERFACE IDENT SEMICOLON {
@@ -234,39 +262,54 @@ filter
             YYERROR;
         }
 
-        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_out_interface, &iface));
+        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_out_interface, &iface));
         free($2);
     }
     | PROTOCOL NUMBER SEMICOLON {
-        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &$2));
+        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &$2));
     }
     | PROTOCOL TCP SEMICOLON {
         uint8_t proto = IPPROTO_TCP;
-        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &proto));
+        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &proto));
     }
     | PROTOCOL UDP SEMICOLON {
         uint8_t proto = IPPROTO_UDP;
-        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &proto));
+        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &proto));
     }
     | SOURCE_PORT NUMBER SEMICOLON {
-        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_src_port, &$2));
+        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_src_port, &$2));
     }
     | DESTINATION_PORT NUMBER SEMICOLON {
-        ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_dst_port, &$2));
+        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_dst_port, &$2));
     }
 
-action_list: action | action_list action
+action_list
+    : action
+    | action action_list {
+        $1->next = $2;
+    }
 
 action: IDENT LBRACE action_options RBRACE {
-    ERR_IF_NULL(end_action($1));
+    $$ = end_action($1);
     free($1);
 }
 
 action_options: action_option | action_options action_option
 
 action_option
+    : action_scripts {
+        get_current_action()->scripts = $1;
+    }
+
+action_scripts
+    : action_script
+    | action_script action_scripts {
+        $1->next = $2;
+    }
+
+action_script
     : SCRIPT QUOTED_STRING LBRACE script_options RBRACE {
-        ERR_IF_NULL(end_action_script($2));
+        $$ = end_action_script($2);
         free($2);
     }
 
@@ -285,69 +328,135 @@ script_event
         get_current_action_script()->flags |= APERMON_SCRIPT_EVENT_UNBAN;
     }
 
-prefix_list: prefixes | prefix_list prefixes
+prefix_list
+    : prefixes
+    | prefixes prefix_list {
+        $1->next = $2;
+    }
 
-prefixes: IDENT LBRACE prefix RBRACE {
-    ERR_IF_NULL(end_prefix_list($1));
+prefixes: IDENT LBRACE prefix_elements RBRACE {
+    $$ = (apermon_config_prefix_lists *) malloc(sizeof(apermon_config_prefix_lists));
+    memset($$, 0, sizeof(apermon_config_prefix_lists));
+
+    $$->name = strdup($1);
+    $$->elements = $3;
+
     free($1);
 }
 
+prefix_elements
+    : prefix
+    | prefix prefix_elements {
+        $1->next = $2;
+    }
+
 prefix
     : IP SLASH NUMBER SEMICOLON {
-        ERR_IF_NULL(add_prefix_inet(&$1, $3));
+        ERR_IF_NULL($$ = new_prefix_inet(&$1, $3));
     }
     | IP6 SLASH NUMBER SEMICOLON {
-        ERR_IF_NULL(add_prefix_inet6(&$1, $3));
+        ERR_IF_NULL($$ = new_prefix_inet6(&$1, $3));
     }
 
-iface_list: iface | iface_list iface
+iface_list
+    : iface
+    | iface iface_list {
+        $1->next = $2;
+    }
 
 iface: IDENT LBRACE iface_options RBRACE {
-    ERR_IF_NULL(end_interface($1));
+    $$ = end_interface($1);
     free($1);
 }
 
 iface_options
-    : IFINDEXES LBRACK iface_indexes RBRACK SEMICOLON
+    : IFINDEXES LBRACK iface_indexes RBRACK SEMICOLON {
+        get_current_interface()->ifindexes = $3;
+    }
 
-iface_indexes: iface_index | iface_indexes iface_index
+iface_indexes
+    : iface_index
+    | iface_index iface_indexes {
+        $1->next = $2;
+    }
 
 iface_index: IDENT DOT NUMBER {
-    ERR_IF_NULL(add_ifindex($1, $3));
+    $$ = (apermon_config_ifindexes *) malloc(sizeof(apermon_config_ifindexes));
+    memset($$, 0, sizeof(apermon_config_ifindexes));
+
+    const apermon_config_agents *agent = get_agent($1);
+    if (agent == NULL) {
+        store_retval(-1);
+        log_error("agent '%s' not defined.\n", $1);
+        YYERROR;
+    }
+    $$->agent = agent;
+    $$->ifindex = $3;
+
     free($1);
 }
 
-agent_list: agent | agent_list agent
+agent_list
+    : agent
+    | agent agent_list {
+        $1->next = $2;
+    }
 
 agent: IDENT LBRACE agent_options RBRACE {
-    ERR_IF_NULL(end_agent($1));
+    $$ = end_agent($1);
     free($1);
 }
 
 agent_options: agent_option | agent_options agent_option
 
 agent_option
-    : ADDRESSES LBRACK agent_addresses RBRACK SEMICOLON
+    : ADDRESSES LBRACK agent_addresses RBRACK SEMICOLON {
+        get_current_agent()->addresses = $3;
+    }
 
-agent_addresses: agent_address | agent_addresses agent_address
+agent_addresses
+    : agent_address
+    | agent_address agent_addresses {
+        $1->next = $2;
+    }
 
 agent_address
     : IP {
-        ERR_IF_NULL(add_agent_address_inet(&$1));
+        $$ = (apermon_config_agent_addresses *) malloc(sizeof(apermon_config_agent_addresses));
+        memset($$, 0, sizeof(apermon_config_agent_addresses));
+        $$->af = AF_INET;
+        $$->inet.s_addr = $1.s_addr;
     }
     | IP6 {
-        ERR_IF_NULL(add_agent_address_inet6(&$1));
+        $$ = (apermon_config_agent_addresses *) malloc(sizeof(apermon_config_agent_addresses));
+        memset($$, 0, sizeof(apermon_config_agent_addresses));
+        $$->af = AF_INET6;
+        memcpy(&$$->inet6, &$1, sizeof($$->inet6));
     }
 
-options: option_item | option_item options
+options: option_items | option_items options
 
-option_item
+option_items
+    : option_item_listens {
+        get_config()->listens = $1;
+    }
+    | MIN_BAN_TIME NUMBER SEMICOLON {
+        get_config()->min_ban_time = $2;
+    }
+
+option_item_listens
+    : option_item_listen
+    | option_item_listen option_item_listens {
+        $1->next = $2;
+    }
+
+option_item_listen
     : LISTEN IDENT NUMBER listen_args SEMICOLON {
-        ERR_IF_NULL(end_listen($2, $3));
+        ERR_IF_NULL($$ = listen_fill_gai($4, $2, $3));
         free($2);
     }
     | LISTEN QUOTED_STRING NUMBER listen_args SEMICOLON {
-        ERR_IF_NULL(end_listen($2, $3));
+        ERR_IF_NULL($$ = listen_fill_gai($4, $2, $3));
         free($2);
     }
     | LISTEN IP NUMBER listen_args SEMICOLON {
@@ -358,8 +467,7 @@ option_item
             log_fatal("inet_ntop(): %s\n", strerror(errno));
             YYERROR;
         }
-
-        ERR_IF_NULL(end_listen(addr, $3));
+        ERR_IF_NULL($$ = listen_fill_gai($4, addr, $3));
     }
     | LISTEN IP6 NUMBER listen_args SEMICOLON {
         char addr[INET6_ADDRSTRLEN + 1];
@@ -369,16 +477,16 @@ option_item
             log_fatal("inet_ntop(): %s\n", strerror(errno));
             YYERROR;
         }
-
-        ERR_IF_NULL(end_listen(addr, $3));
+        ERR_IF_NULL($$ = listen_fill_gai($4, addr, $3));
     }
-    | MIN_BAN_TIME NUMBER SEMICOLON {
-        get_config()->min_ban_time = $2;
-    }
+    
 
 listen_args
     : SFLOW V5 {
-        new_listen()->proto = APERMON_LISTEN_SFLOW_V5;
+        $$ = (apermon_config_listens *) malloc(sizeof(apermon_config_listens));
+        memset($$, 0, sizeof(apermon_config_listens));
+
+        $$->proto = APERMON_LISTEN_SFLOW_V5;
     }
 %%
 

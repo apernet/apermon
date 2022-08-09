@@ -34,7 +34,7 @@ typedef struct _apermon_config_agents {
 } apermon_config_agents;
 
 typedef struct _apermon_config_ifindexes {
-    char *agent;
+    const apermon_config_agents *agent;
     uint32_t ifindex;
 
     struct _apermon_config_ifindexes *next;
@@ -64,17 +64,17 @@ typedef struct _apermon_config_prefix_list_elements {
     struct _apermon_config_prefix_list_elements *next;
 } apermon_config_prefix_list_elements;
 
-typedef struct _apermon_config_prefix_list {
+typedef struct _apermon_config_prefix_lists {
     char *name;
     apermon_config_prefix_list_elements *elements;
 
-    struct _apermon_config_prefix_list *next;
-} apermon_config_prefix_list;
+    struct _apermon_config_prefix_lists *next;
+} apermon_config_prefix_lists;
 
-typedef struct _apermon_config_prefix_list_set {
-    const apermon_config_prefix_list *prefix_list;
-    struct _apermon_config_prefix_list_set *next;
-} apermon_config_prefix_list_set;
+typedef struct _apermon_config_prefix_lists_set {
+    const apermon_config_prefix_lists *prefix_list;
+    struct _apermon_config_prefix_lists_set *next;
+} apermon_config_prefix_lists_set;
 
 #define APERMON_SCRIPT_EVENT_BAN    0b00000001
 #define APERMON_SCRIPT_EVENT_UNBAN  0b00000010
@@ -97,7 +97,7 @@ typedef struct _apermon_config_actions {
 typedef struct _apermon_config_triggers {
     char *name;
 
-    apermon_config_prefix_list_set *prefixes; // owned by us
+    apermon_config_prefix_lists_set *prefixes; // owned by us
     uint8_t flags; /* bit 0: ingress check, 1: egress check, 2: ban time override */
 
     enum aggregator aggregator;
@@ -119,16 +119,12 @@ typedef struct _apermon_config {
     apermon_config_listens *listens;
     apermon_config_agents *agents;
     apermon_config_interfaces *interfaces;
-    apermon_config_prefix_list *prefix_lists;
+    apermon_config_prefix_lists *prefix_lists;
     apermon_config_actions *actions;
     apermon_config_triggers *triggers;
 
     uint32_t min_ban_time;
 } apermon_config;
-
-apermon_config_interfaces *get_interface(const char *name);
-apermon_config_prefix_list *get_prefix_list(const char *name);
-apermon_config_actions *get_action(const char *name);
 
 int parse_config(const char *filename, apermon_config **config);
 void free_config(apermon_config *config);

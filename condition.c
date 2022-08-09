@@ -137,7 +137,7 @@ static void append_flow(apermon_context *ctx, const apermon_flow_record *flow) {
 
 void select_flow(apermon_context *ctx, const apermon_flow_record *flow) {
     const apermon_config_triggers *t = ctx->trigger_config;
-    const apermon_config_prefix_list_set *ls = t->prefixes;
+    const apermon_config_prefix_lists_set *ls = t->prefixes;
     const apermon_config_prefix_list_elements *ps;
 
     while (ls != NULL) {

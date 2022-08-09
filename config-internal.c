@@ -13,12 +13,10 @@ static apermon_config_listens *_current_listen;
 static apermon_config_agents *_current_agent;
 static apermon_config_interfaces *_current_interface;
 static apermon_config_triggers *_current_trigger;
-static apermon_config_prefix_list *_current_prefix_list;
+static apermon_config_prefix_lists *_current_prefix_list;
+static apermon_config_prefix_list_elements *_current_prefix_list_element;
 static apermon_config_actions *_current_action;
 static apermon_config_action_scripts *_current_action_script;
-
-static apermon_cond_list *_current_cond_list_stack[FILTER_RULES_MAX_NESTING];
-static size_t _current_cond_list_stack_pos;
 
 static const uint8_t CIDR_MASK_MAP6[129][16] = {
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -152,40 +150,41 @@ static const uint8_t CIDR_MASK_MAP6[129][16] = {
     {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 };
 
-#define GET_CURRENT_NAMED_STRUCT_FUNC(type, funcname, current_var) type *funcname() {\
+#define NAMED_STRUCT_UTIL_FUNCS(type, func_suffix, current_var) type * get_current_ ## func_suffix() {\
     if ((current_var) == NULL) {\
         (current_var) = (type *) malloc(sizeof(type));\
         memset((current_var), 0, sizeof(type));\
     }\
     return (current_var);\
+}\
+type *end_ ## func_suffix(const char *name) {\
+    type *el = (current_var);\
+    el->name = strdup(name);\
+    (current_var) = NULL;\
+    return el;\
 }
 
-#define END_NAMED_STRUCT_FUNC(type, funcname, current_var, parent_type, parent_var, field) type *funcname(const char *name) {\
-    parent_type *parent = (parent_var);\
-    if ((current_var) == NULL) { return NULL; }\
-    (current_var)->name = strdup(name);\
-    type *i = parent->field, *prev = NULL;\
-    while (i != NULL) { prev = i; i = i->next; }\
-    if (prev == NULL) { parent->field = (current_var); }\
-    else { prev->next = (current_var); }\
-    type *ret = current_var;\
-    current_var = NULL;\
-    return ret;\
+#define LIST_UTIL_FUNCS(type, func_suffix, current_var) type * get_current_ ## func_suffix() {\
+    if ((current_var) == NULL) {\
+        (current_var) = (type *) malloc(sizeof(type));\
+        memset((current_var), 0, sizeof(type));\
+    }\
+    return (current_var);\
+}\
+type *end_ ## func_suffix() {\
+    type *el = (current_var);\
+    (current_var) = NULL;\
+    return el;\
 }
 
-#define NEW_LIST_ELEMENT_FUNC(type, funcname, parent_type, parent_var, field) type *funcname() {\
-    parent_type *parent = (parent_var);\
-    type *new_element = (type *) malloc(sizeof(type));\
-    type *i = parent->field, *prev = NULL;\
-    while (i != NULL) { prev = i; i = i->next; }\
-    if (prev == NULL) { parent->field = new_element; }\
-    else { prev->next = new_element; };\
-    new_element->next = NULL;\
-    return new_element;\
-}
-
-static void cond_list_stack_push(apermon_cond_list *list) {
-    _current_cond_list_stack[_current_cond_list_stack_pos++] = list;
+#define GET_ELEMENT_FUNC(type, funcname, head_var) type *funcname(const char *name) {\
+    type *element = (head_var);\
+    if (element == NULL) { return NULL; }\
+    while (element != NULL) {\
+        if (strcmp(element->name, name) == 0) { return element; }\
+        element = element->next;\
+    }\
+    return NULL;\
 }
 
 void start_config() {
@@ -200,8 +199,7 @@ void start_config() {
     _current_action_script = NULL;
     _current_trigger = _config->triggers = NULL;
 
-    _current_cond_list_stack_pos = 0;
-    memset(_current_cond_list_stack, 0, sizeof(_current_cond_list_stack));
+    _current_prefix_list_element = NULL;
 
     memset(&_gai_hints, 0, sizeof(struct addrinfo));
     _gai_hints.ai_family = AF_UNSPEC;
@@ -233,76 +231,29 @@ apermon_config *get_config() {
     return _config;
 }
 
-static NEW_LIST_ELEMENT_FUNC(apermon_config_listens, new_listen_internal, apermon_config, _config, listens);
-
-apermon_config_listens *new_listen() {
-    return _current_listen = new_listen_internal();
-}
-
-apermon_config_listens *end_listen(const char *host, uint16_t port) {
+apermon_config_listens *listen_fill_gai(apermon_config_listens *listen, const char *host, uint16_t port) {
     char port_str[6];
     memset(port_str, 0, sizeof(port_str));
     sprintf(port_str, "%u", port);
 
-    int ret = getaddrinfo(host, port_str, &_gai_hints, &_current_listen->addr);
+    int ret = getaddrinfo(host, port_str, &_gai_hints, &listen->addr);
 
     if (ret != 0) {
         log_fatal("getaddrinfo() on \"%s\" failed: %s\n", host, gai_strerror(ret));
         return NULL;
     }
 
-    return _current_listen;
+    return listen;
 }
 
-GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_agents, get_current_agent, _current_agent);
-
-END_NAMED_STRUCT_FUNC(apermon_config_agents, end_agent, _current_agent, apermon_config, _config, agents);
-
-NEW_LIST_ELEMENT_FUNC(apermon_config_agent_addresses, new_address, apermon_config_agents, get_current_agent(), addresses);
-
-apermon_config_agent_addresses *add_agent_address_inet(const struct in_addr *addr) {
-    apermon_config_agent_addresses *a = new_address();
-    a->af = AF_INET;
-    memcpy(&a->inet, addr, sizeof(a->inet));
-
-    return a;
-}
-
-apermon_config_agent_addresses *add_agent_address_inet6(const struct in6_addr *addr) {
-    apermon_config_agent_addresses *a = new_address();
-    a->af = AF_INET6;
-    memcpy(&a->inet6, addr, sizeof(a->inet6));
-
-    return a;
-}
-
-GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_interfaces, get_current_interface, _current_interface);
-
-END_NAMED_STRUCT_FUNC(apermon_config_interfaces, end_interface, _current_interface, apermon_config, _config, interfaces);
-
-NEW_LIST_ELEMENT_FUNC(apermon_config_ifindexes, new_ifindex, apermon_config_interfaces, get_current_interface(), ifindexes);
-
-apermon_config_ifindexes *add_ifindex(const char *agent, uint32_t ifindex) {
-    apermon_config_ifindexes *i = new_ifindex();
-    i->agent = strdup(agent);
-    i->ifindex = ifindex;
-
-    return i;
-}
-
-GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_prefix_list, get_current_prefix_list, _current_prefix_list);
-
-END_NAMED_STRUCT_FUNC(apermon_config_prefix_list, end_prefix_list, _current_prefix_list, apermon_config, _config, prefix_lists);
-
-NEW_LIST_ELEMENT_FUNC(apermon_config_prefix_list_elements, new_prefix_list_element, apermon_config_prefix_list, get_current_prefix_list(), elements);
-
-apermon_config_prefix_list_elements *add_prefix_inet(const struct in_addr *addr, uint8_t prefix_len) {
+apermon_config_prefix_list_elements *new_prefix_inet(const struct in_addr *addr, uint8_t prefix_len) {
     if (prefix_len > 32) {
         log_fatal("invalid inet prefix length: %u\n", prefix_len);
         return NULL;
     }
 
-    apermon_config_prefix_list_elements *prefix = new_prefix_list_element();
+    apermon_config_prefix_list_elements *prefix = (apermon_config_prefix_list_elements *) malloc(sizeof(apermon_config_prefix_list_elements));
+    memset(prefix, 0, sizeof(apermon_config_prefix_list_elements));
     prefix->prefix = new_prefix();
     prefix->prefix->af = SFLOW_AF_INET;
     prefix->prefix->inet = addr->s_addr;
@@ -311,13 +262,14 @@ apermon_config_prefix_list_elements *add_prefix_inet(const struct in_addr *addr,
     return prefix;
 }
 
-apermon_config_prefix_list_elements *add_prefix_inet6(const struct in6_addr *addr, uint8_t prefix_len) {
+apermon_config_prefix_list_elements *new_prefix_inet6(const struct in6_addr *addr, uint8_t prefix_len) {
     if (prefix_len > 128) {
         log_fatal("invalid inet6 prefix length: %u\n", prefix_len);
         return NULL;
     }
 
-    apermon_config_prefix_list_elements *prefix = new_prefix_list_element();
+    apermon_config_prefix_list_elements *prefix = (apermon_config_prefix_list_elements *) malloc(sizeof(apermon_config_prefix_list_elements));
+    memset(prefix, 0, sizeof(apermon_config_prefix_list_elements));
     prefix->prefix = new_prefix();
     prefix->prefix->af = SFLOW_AF_INET6;
     memcpy(&prefix->prefix->inet6, addr, sizeof(prefix->prefix->inet6));
@@ -326,14 +278,13 @@ apermon_config_prefix_list_elements *add_prefix_inet6(const struct in6_addr *add
     return prefix;
 }
 
-GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_actions, get_current_action, _current_action);
+NAMED_STRUCT_UTIL_FUNCS(apermon_config_agents, agent, _current_agent);
+NAMED_STRUCT_UTIL_FUNCS(apermon_config_interfaces, interface, _current_interface);
+NAMED_STRUCT_UTIL_FUNCS(apermon_config_actions, action, _current_action);
+NAMED_STRUCT_UTIL_FUNCS(apermon_config_action_scripts, action_script, _current_action_script);
+NAMED_STRUCT_UTIL_FUNCS(apermon_config_triggers, trigger, _current_trigger);
 
-END_NAMED_STRUCT_FUNC(apermon_config_actions, end_action, _current_action, apermon_config, _config, actions);
-
-GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_action_scripts, get_current_action_script, _current_action_script);
-
-END_NAMED_STRUCT_FUNC(apermon_config_action_scripts, end_action_script, _current_action_script, apermon_config_actions, get_current_action(), scripts);
-
-GET_CURRENT_NAMED_STRUCT_FUNC(apermon_config_triggers, get_current_trigger, _current_trigger);
-
-END_NAMED_STRUCT_FUNC(apermon_config_triggers, end_trigger, _current_trigger, apermon_config, _config, triggers);
+GET_ELEMENT_FUNC(apermon_config_agents, get_agent, _config->agents);
+GET_ELEMENT_FUNC(apermon_config_interfaces, get_interface, _config->interfaces);
+GET_ELEMENT_FUNC(apermon_config_prefix_lists, get_prefix_list, _config->prefix_lists);
+GET_ELEMENT_FUNC(apermon_config_actions, get_action, _config->actions);
