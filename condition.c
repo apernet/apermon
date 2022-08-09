@@ -4,8 +4,8 @@
 #include "condition.h"
 #include "log.h"
 
-int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond_list** */) {
-    const apermon_cond_list *cl = *(apermon_cond_list **) arg;
+int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond_list* */) {
+    const apermon_cond_list *cl = (apermon_cond_list *) arg;
     const apermon_cond_func_list *f = cl->funcs;
 
     if (cl->type == APERMON_COND_AND) {
@@ -137,7 +137,7 @@ static void append_flow(apermon_context *ctx, const apermon_flow_record *flow) {
 
 void select_flow(apermon_context *ctx, const apermon_flow_record *flow) {
     const apermon_config_triggers *t = ctx->trigger_config;
-    const apermon_config_prefix_lists_set *ls = t->prefixes;
+    const apermon_config_prefix_lists_set *ls = t->networks;
     const apermon_config_prefix_list_elements *ps;
 
     while (ls != NULL) {

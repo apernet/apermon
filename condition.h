@@ -26,13 +26,11 @@ enum cond_type {
 typedef struct _apermon_cond_list {
     enum cond_type type;
     apermon_cond_func_list *funcs;
-
-    struct _apermon_cond_list *next;
 } apermon_cond_list;
 
 /* cond functions */
 
-int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond_list** */); /* eval cond-list */
+int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond_list* */); /* eval cond-list */
 int cond_in_interface(const apermon_flow_record* record, const void* arg /* apermon_config_interface** */); /* keep only flows matching given in interface */
 int cond_out_interface(const apermon_flow_record* record, const void* arg /* apermon_config_interface** */); /* keep only flows matching given out interface */
 int cond_src(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements** */); /* keep only flow where dst in list */

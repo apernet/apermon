@@ -97,7 +97,7 @@ typedef struct _apermon_config_actions {
 typedef struct _apermon_config_triggers {
     char *name;
 
-    apermon_config_prefix_lists_set *prefixes; // owned by us
+    apermon_config_prefix_lists_set *networks; // owned by us
     uint8_t flags; /* bit 0: ingress check, 1: egress check, 2: ban time override */
 
     enum aggregator aggregator;

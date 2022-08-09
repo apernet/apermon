@@ -43,6 +43,9 @@
     apermon_config_prefix_list_elements *prefix_list_element;
     apermon_config_actions *action;
     apermon_config_action_scripts *action_script;
+    apermon_config_triggers *trigger;
+    apermon_config_prefix_lists_set *prefix_lists_set;
+    apermon_cond_func_list *cond_func_list_element;
 }
 
 %token OPTIONS LISTEN MIN_BAN_TIME
@@ -71,6 +74,10 @@
 %type <prefix_list_element> prefix prefix_elements
 %type <action> action action_list
 %type <action_script> action_script action_scripts
+%type <trigger> trigger trigger_list
+%type <prefix_lists_set> prefix_lists_set prefix_lists_set_element
+%type <cond_func_list_element> filter filter_list
+%type <u64> proto_name
 
 %%
 config: config_item | config config_item
@@ -89,21 +96,29 @@ config_item
     | ACTIONS LBRACE action_list RBRACE {
         get_config()->actions = $3;
     }
-    | TRIGGERS LBRACE trigger_list RBRACE
+    | TRIGGERS LBRACE trigger_list RBRACE {
+        get_config()->triggers = $3;
+    }
 
-trigger_list: trigger | trigger_list trigger
+trigger_list
+    : trigger
+    | trigger trigger_list {
+        $1->next = $2;
+    }
 
 trigger: IDENT LBRACE trigger_options RBRACE {
-    ERR_IF_NULL(end_trigger($1));
+    $$ = end_trigger($1);
     free($1);
 }
 
 trigger_options: trigger_option | trigger_options trigger_option
 
 trigger_option
-    : NETWORKS LBRACK network_list RBRACK SEMICOLON
+    : NETWORKS LBRACK prefix_lists_set RBRACK SEMICOLON {
+        get_current_trigger()->networks = $3;
+    }
     | MIN_BAN_TIME NUMBER SEMICOLON {
-        get_current_trigger()->flags |=  APERMON_TRIGGER_SET_BAN_TIME;
+        get_current_trigger()->flags |= APERMON_TRIGGER_SET_BAN_TIME;
         get_current_trigger()->min_ban_time = $2;
     }
     | DIRECTIONS LBRACK direction_list RBRACK SEMICOLON
@@ -114,7 +129,15 @@ trigger_option
         get_current_trigger()->aggregator = APERMON_AGGREGATOR_NET;
     }
     | THRESHOLDS LBRACE threshold_list RBRACE
-    | FILTER LBRACE filter_list RBRACE
+    | FILTER LBRACE filter_list RBRACE {
+        apermon_cond_list *l = (apermon_cond_list *) malloc(sizeof(apermon_cond_list));
+
+        memset(l, 0, sizeof(apermon_cond_list));
+        l->funcs = $3;
+        l->type = APERMON_COND_AND;
+
+        get_current_trigger()->conds = l;
+    }
     | ACTION IDENT SEMICOLON {
         apermon_config_actions *action = get_action($2);
 
@@ -128,9 +151,13 @@ trigger_option
         free($2);
     }
 
-network_list: network | network_list network
+prefix_lists_set
+    : prefix_lists_set_element
+    | prefix_lists_set_element prefix_lists_set {
+        $1->next = $2;
+    }
 
-network: IDENT {
+prefix_lists_set_element: IDENT {
     void *pfxlist = get_prefix_list($1);
 
     if (pfxlist == NULL) {
@@ -139,7 +166,9 @@ network: IDENT {
         YYERROR;
     }
 
-    // ERR_IF_NULL(add_trigger_network(pfxlist));
+    $$ = malloc(sizeof(apermon_config_prefix_lists_set));
+    memset($$, 0, sizeof(apermon_config_prefix_lists_set));
+    $$->prefix_list = pfxlist;
     free($1);
 }
 
@@ -199,26 +228,48 @@ threshold
         get_current_trigger()->pps = $2 * 1000 * 1000 * 1000;
     }
 
-filter_list: filter | filter_list filter
+filter_list
+    : filter
+    | filter filter_list {
+        $1->next = $2;
+    }
+
+proto_name
+    : TCP { $$ = IPPROTO_TCP; }
+    | UDP { $$ = IPPROTO_UDP; }
+    | NUMBER { $$ = $1; }
 
 filter
     : AND LBRACE filter_list RBRACE {
-        // apermon_cond_list *parent = get_parent_cond_list();
-        // apermon_cond_list *current = end_cond_list(APERMON_COND_AND);
-        // ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
+        apermon_cond_list *l = (apermon_cond_list *) malloc(sizeof(apermon_cond_list));
+        memset(l, 0, sizeof(apermon_cond_list));
+
+        l->type = APERMON_COND_AND;
+        l->funcs = $3;
+        
+        $$ = new_cond_func_list_element(cond_list, l);
     }
     | OR LBRACE filter_list RBRACE {
-        // apermon_cond_list *parent = get_parent_cond_list();
-        // apermon_cond_list *current = end_cond_list(APERMON_COND_OR);
-        // ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
+        apermon_cond_list *l = (apermon_cond_list *) malloc(sizeof(apermon_cond_list));
+        memset(l, 0, sizeof(apermon_cond_list));
+
+        l->type = APERMON_COND_OR;
+        l->funcs = $3;
+        
+        $$ = new_cond_func_list_element(cond_list, l);
     }
     | NOT LBRACE filter_list RBRACE {
-        // apermon_cond_list *parent = get_parent_cond_list();
-        // apermon_cond_list *current = end_cond_list(APERMON_COND_NOT);
-        // ERR_IF_NULL(append_cond_list(parent, cond_src, &current));
+        apermon_cond_list *l = (apermon_cond_list *) malloc(sizeof(apermon_cond_list));
+        memset(l, 0, sizeof(apermon_cond_list));
+
+        l->type = APERMON_COND_NOT;
+        l->funcs = $3;
+        
+        $$ = new_cond_func_list_element(cond_list, l);
     }
     | SOURCE IDENT SEMICOLON {
-        void *pfxlist = get_prefix_list($2);
+        apermon_config_prefix_lists *pfxlist = get_prefix_list($2);
+        apermon_config_prefix_list_elements **arg = malloc(sizeof(void *));
 
         if (pfxlist == NULL) {
             store_retval(-1);
@@ -226,11 +277,14 @@ filter
             YYERROR;
         }
 
-        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_src, &pfxlist));
+        *arg = pfxlist->elements;
+
+        $$ = new_cond_func_list_element(cond_src, arg);
         free($2);
     }
     | DESTINATION IDENT SEMICOLON {
-        void *pfxlist = get_prefix_list($2);
+        apermon_config_prefix_lists *pfxlist = get_prefix_list($2);
+        apermon_config_prefix_list_elements **arg = malloc(sizeof(void *));
 
         if (pfxlist == NULL) {
             store_retval(-1);
@@ -238,49 +292,52 @@ filter
             YYERROR;
         }
 
-        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_dst, &pfxlist));
+        *arg = pfxlist->elements;
+
+        $$ = new_cond_func_list_element(cond_dst, arg);
         free($2);
     }
     | IN_INTERFACE IDENT SEMICOLON {
-        void *iface = get_interface($2);
+        apermon_config_interfaces **arg = malloc(sizeof(void *));
+        *arg = get_interface($2);
 
-        if (iface == NULL) {
+        if (*arg == NULL) {
             store_retval(-1);
             log_error("interface '%s' not defined.\n", $2);
             YYERROR;
         }
 
-        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_in_interface, &iface));
+        $$ = new_cond_func_list_element(cond_in_interface, &arg);
         free($2);
     }
     | OUT_INTERFACE IDENT SEMICOLON {
-        void *iface = get_interface($2);
+        apermon_config_interfaces **arg = malloc(sizeof(void *));
+        *arg = get_interface($2);
 
-        if (iface == NULL) {
+        if (*arg == NULL) {
             store_retval(-1);
             log_error("interface '%s' not defined.\n", $2);
             YYERROR;
         }
 
-        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_out_interface, &iface));
+        $$ = new_cond_func_list_element(cond_out_interface, &arg);
         free($2);
     }
-    | PROTOCOL NUMBER SEMICOLON {
-        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &$2));
-    }
-    | PROTOCOL TCP SEMICOLON {
-        uint8_t proto = IPPROTO_TCP;
-        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &proto));
-    }
-    | PROTOCOL UDP SEMICOLON {
-        uint8_t proto = IPPROTO_UDP;
-        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_proto, &proto));
+    | PROTOCOL proto_name SEMICOLON {
+        uint8_t *arg = malloc(sizeof(uint8_t));
+        *arg = $2;
+
+        $$ = new_cond_func_list_element(cond_proto, &arg);
     }
     | SOURCE_PORT NUMBER SEMICOLON {
-        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_src_port, &$2));
+        uint16_t *arg = malloc(sizeof(uint16_t));
+        *arg = $2;
+        $$ = new_cond_func_list_element(cond_src_port, &arg);
     }
     | DESTINATION_PORT NUMBER SEMICOLON {
-        // ERR_IF_NULL(append_cond_list(get_current_cond_list(), cond_dst_port, &$2));
+        uint16_t *arg = malloc(sizeof(uint16_t));
+        *arg = $2;
+        $$ = new_cond_func_list_element(cond_dst_port, &arg);
     }
 
 action_list

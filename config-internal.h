@@ -18,6 +18,7 @@ apermon_config *get_config();
 apermon_config_listens *listen_fill_gai(apermon_config_listens *listen, const char *host, uint16_t port);
 apermon_config_prefix_list_elements *new_prefix_inet(const struct in_addr *addr, uint8_t prefix_len);
 apermon_config_prefix_list_elements *new_prefix_inet6(const struct in6_addr *addr, uint8_t prefix_len);
+apermon_cond_func_list *new_cond_func_list_element(apermon_cond_func func, void *arg);
 
 apermon_config_agents *get_current_agent();
 apermon_config_agents *end_agent(const char *agent_name);

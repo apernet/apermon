@@ -278,6 +278,14 @@ apermon_config_prefix_list_elements *new_prefix_inet6(const struct in6_addr *add
     return prefix;
 }
 
+apermon_cond_func_list *new_cond_func_list_element(apermon_cond_func func, void *arg) {
+    apermon_cond_func_list *el = (apermon_cond_func_list *) malloc(sizeof(apermon_cond_func_list));
+    memset(el, 0, sizeof(apermon_cond_func_list));
+    el->func = func;
+    el->arg = arg;
+    return el;
+}
+
 NAMED_STRUCT_UTIL_FUNCS(apermon_config_agents, agent, _current_agent);
 NAMED_STRUCT_UTIL_FUNCS(apermon_config_interfaces, interface, _current_interface);
 NAMED_STRUCT_UTIL_FUNCS(apermon_config_actions, action, _current_action);

@@ -1,6 +1,7 @@
 %{
     #include <arpa/inet.h>
     #include "config.h"
+    #include "condition.h"
     #include "config.tab.h"
     #include "prefix-list.h"
 %}
