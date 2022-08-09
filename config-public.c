@@ -1,5 +1,34 @@
 #include <stdlib.h>
 #include "config.h"
+#include "condition.h"
+
+static void free_cond_list(apermon_cond_list *cl) {
+    apermon_cond_func_list *f = NULL, *prev_f = NULL;
+    f = cl->funcs, prev_f = NULL;
+
+    while (f != NULL) {
+        if (prev_f != NULL) {
+            free(prev_f);
+        }
+
+        if (f->arg != NULL) {
+            if (f->func == cond_list) {
+                free_cond_list(f->arg);
+            } else {
+                free(f->arg);
+            }
+        }
+        
+        prev_f = f;
+        f = f->next;
+    }
+
+    if (prev_f != NULL) {
+        free(prev_f);
+    }
+
+    free(cl);
+}
 
 void free_config(apermon_config *config) {
     apermon_config_listens *l = config->listens, *prev_l = NULL;
@@ -11,6 +40,8 @@ void free_config(apermon_config *config) {
     apermon_config_prefix_list_elements *pe = NULL, *prev_pe = NULL;
     apermon_config_actions *ac = config->actions, *prev_ac = NULL;
     apermon_config_action_scripts *as = NULL, *prev_as = NULL;
+    apermon_config_triggers *t = config->triggers, *prev_t = NULL;
+    apermon_config_prefix_lists_set *ps = NULL, *prev_ps = NULL;
     
     while (l != NULL) {
         if (prev_l != NULL) {
@@ -160,6 +191,48 @@ void free_config(apermon_config *config) {
 
     if (prev_ac != NULL) {
         free(prev_ac);
+    }
+
+    while (t != NULL) {
+        if (prev_t != NULL) {
+            free(prev_t);
+        }
+
+        if (t->name != NULL) {
+            free(t->name);
+        }
+
+        if (t->ctx != NULL) {
+            free_context(t->ctx);
+        }
+
+        if (t->conds != NULL) {
+            free_cond_list(t->conds);
+        }
+
+        if (t->networks != NULL) {
+            ps = t->networks, prev_ps = NULL;
+
+            while (ps != NULL) {
+                if (prev_ps != NULL) {
+                    free(prev_ps);
+                }
+
+                prev_ps = ps;
+                ps = ps->next;
+            }
+
+            if (prev_ps != NULL) {
+                free(prev_ps);
+            }
+        }
+
+        prev_t = t;
+        t = t->next;
+    }
+
+    if (prev_t != NULL) {
+        free(prev_t);
     }
 
     free(config);

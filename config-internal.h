@@ -5,8 +5,6 @@
 #include "prefix-list.h"
 #include "condition.h"
 
-#define FILTER_RULES_MAX_NESTING 64
-
 void start_config();
 void end_config();
 

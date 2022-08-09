@@ -307,7 +307,7 @@ filter
             YYERROR;
         }
 
-        $$ = new_cond_func_list_element(cond_in_interface, &arg);
+        $$ = new_cond_func_list_element(cond_in_interface, arg);
         free($2);
     }
     | OUT_INTERFACE IDENT SEMICOLON {
@@ -320,24 +320,24 @@ filter
             YYERROR;
         }
 
-        $$ = new_cond_func_list_element(cond_out_interface, &arg);
+        $$ = new_cond_func_list_element(cond_out_interface, arg);
         free($2);
     }
     | PROTOCOL proto_name SEMICOLON {
         uint8_t *arg = malloc(sizeof(uint8_t));
         *arg = $2;
 
-        $$ = new_cond_func_list_element(cond_proto, &arg);
+        $$ = new_cond_func_list_element(cond_proto, arg);
     }
     | SOURCE_PORT NUMBER SEMICOLON {
         uint16_t *arg = malloc(sizeof(uint16_t));
         *arg = $2;
-        $$ = new_cond_func_list_element(cond_src_port, &arg);
+        $$ = new_cond_func_list_element(cond_src_port, arg);
     }
     | DESTINATION_PORT NUMBER SEMICOLON {
         uint16_t *arg = malloc(sizeof(uint16_t));
         *arg = $2;
-        $$ = new_cond_func_list_element(cond_dst_port, &arg);
+        $$ = new_cond_func_list_element(cond_dst_port, arg);
     }
 
 action_list
@@ -561,6 +561,8 @@ int parse_config(const char *filename, apermon_config **config) {
     yyin = f;
     yyparse();
     fclose(f);
+
+    end_config();
 
     *config = get_config();
 
