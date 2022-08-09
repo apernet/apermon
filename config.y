@@ -65,7 +65,10 @@ config_item
 
 trigger_list: trigger | trigger_list trigger
 
-trigger: IDENT LBRACE trigger_options RBRACE
+trigger: IDENT LBRACE trigger_options RBRACE {
+    ERR_IF_NULL(end_trigger($1));
+    free($1);
+}
 
 trigger_options: trigger_option | trigger_options trigger_option
 
@@ -99,7 +102,18 @@ trigger_option
 
 network_list: network | network_list network
 
-network: IDENT
+network: IDENT {
+    void *pfxlist = get_prefix_list($1);
+
+    if (pfxlist == NULL) {
+        store_retval(-1);
+        log_error("prefix list '%s' not defined.\n", $1);
+        YYERROR;
+    }
+
+    ERR_IF_NULL(add_trigger_network(pfxlist));
+    free($1);
+}
 
 direction_list: direction | direction_list direction
 
