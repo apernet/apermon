@@ -13,6 +13,12 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
 
     for (i = 0; i < n; ++i) {
         af = as[i];
+        af->bps[af->running_average_index] = 0;
+        af->pps[af->running_average_index] = 0;
+    }
+
+    for (i = 0; i < n; ++i) {
+        af = as[i];
 
         // uptime reseted - clear counter to re-calc
         if (af->last_uptime > now) {
@@ -27,7 +33,10 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
 
         dt = now - af->last_uptime;
         af->pps[af->running_average_index] += af->current_pkts * 1000 / dt;
-        af->bps[af->running_average_index] += af->current_bytes * 1000 / dt / 8;
+        af->bps[af->running_average_index] += af->current_bytes * 8 * 1000 / dt;
+
+        af->current_pkts = 0;
+        af->current_bytes = 0;
     }
 
     for (i = 0; i < n; ++i) {
