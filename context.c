@@ -16,7 +16,7 @@ void free_context(apermon_context *ctx) {
     }
 
     if (ctx->aggr_hash != NULL) {
-        free_hash(ctx->aggr_hash);
+        free_hash(ctx->aggr_hash, free_aflow);
     }
 
     free(ctx);

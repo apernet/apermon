@@ -36,7 +36,7 @@ typedef struct _apermon_aggregated_flow {
 int aggergrate_flows(apermon_context *ctx);
 
 apermon_aggregated_flow *new_aflow();
-void free_aflow(apermon_aggregated_flow *flow);
+void free_aflow(void *flow);
 
 apermon_aggregated_agent_data *new_agent_data();
 void free_agent_data(apermon_aggregated_agent_data *data);

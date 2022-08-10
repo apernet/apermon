@@ -45,6 +45,8 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
             inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
         }
 
+        // todo GC: remove old aggregated flows not recently used
+
         log_debug("%s: %lu bps, %lu pps\n", addr, running_average_bps(af), running_average_pps(af));
 
         aggr = aggr->iter_next;

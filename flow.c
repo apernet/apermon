@@ -183,12 +183,13 @@ apermon_aggregated_flow *new_aflow() {
     return af;
 }
 
-void free_aflow(apermon_aggregated_flow *flow) {
+void free_aflow(void *f) {
+    apermon_aggregated_flow *flow = (apermon_aggregated_flow *) f;
     if (flow == NULL) {
         return;
     }
 
-    free_hash(flow->agent_data);
+    free_hash(flow->agent_data, free);
     free(flow);
 }
 
