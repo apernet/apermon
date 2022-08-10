@@ -215,6 +215,7 @@ void end_config() {
     apermon_config_triggers *t = _config->triggers;
     while (t != NULL) {
         t->ctx = new_context();
+        t->ctx->trigger_config = t;
         t = t->next;
     }
 }
