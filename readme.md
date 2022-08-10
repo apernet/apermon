@@ -102,6 +102,7 @@ Notes:
 agents {
     agent-name-1 {
         addresses [ address1 address2 ... ];
+        sample-rate-cap <number>;
     }
     agent-name-2 {
         addresses [ address1 address2 ... ];
@@ -113,6 +114,7 @@ agents {
 Notes:
 
 - For sFlow, `addresses` specify the agent address field in the sFlow header.
+- `sample-rate-cap` can be optionally configured for agents to cap sample rate at a max value to smooth out agents with erroneous high sample rate spikes that create abnormal traffic spikes. 
 
 **`prefixes`** - defines prefix list(s). Used in various places. Syntax:
 
@@ -151,12 +153,13 @@ actions {
 }
 ```
 
-Note:
+Notes:
 
 - Possible event types are:
     - `ban`: run the script when an IP address or network should be "banned." (i.e., trigger fired)
     - `unban`: run the script when an IP address or network should be "unbanned." 
 - For `ban` events, the following environment variables are passed to the script (values are just example):
+    - `TYPE=ban`: type of event. Always `ban` for `ban` event.
     - `AF=1`: address family. `1` - IPv4, `2` - IPv6.
     - `ADDR=192.0.2.1`: host/network to be banned.
     - `PREFIX=192.0.2.0/255.255.255.0`: prefix containing the address.
@@ -176,6 +179,14 @@ Note:
         - `dport`: layer 4 dst port.
         - `bytes`: number of bytes.
         - `packets`: number of packets.
+- For `unban` events, the following environment variables are passed to the script (values are just example):
+    - `TYPE=unban`: type of event. Always `unban` for `unban` event.
+    - `AF=1`: address family. `1` - IPv4, `2` - IPv6.
+    - `FIRST_TRIGGERED=1660166143`: timestamp of initial trigger.
+    - `LAST_TRIGGERED=1660169743`: timestamp of last trigger.
+    - `ADDR=192.0.2.1`: host/network to be unbanned.
+    - `PREFIX=192.0.2.0/255.255.255.0`: prefix containing the address.
+    - `NET=my-network`: name of the network.
 
 **`triggers`** - defines triggers. i.e., when to do what. Syntax:
 
