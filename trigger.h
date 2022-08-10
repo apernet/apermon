@@ -3,6 +3,7 @@
 #include "config.h"
 #include "extract.h"
 #include "flow.h"
+#define TRIGGER_UNBAN_SCAN_INTERVAL 10 // seconds
 
 typedef struct _apermon_trigger_state {
     uint8_t af; /* enum sflow_af */
@@ -12,10 +13,12 @@ typedef struct _apermon_trigger_state {
         uint8_t inet6[16];
     };
 
-    time_t triggered_on;
+    const apermon_config_triggers *trigger; // not owned by us
+
+    time_t last_triggered;
+    time_t first_triggered;
 } apermon_trigger_state;
 
 int run_trigger(const apermon_config_triggers *config, const apermon_flows *flows);
-void fire_trigger(const apermon_config_triggers *config, const apermon_aggregated_flow *flow, const apermon_aggregated_flow_average *metrics);
 
 #endif // APERMON_TRIGGER_H
