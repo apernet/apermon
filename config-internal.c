@@ -217,11 +217,14 @@ void end_config() {
     apermon_config_agent_addresses *aa = NULL, *old = NULL;
 
     char addr[INET6_ADDRSTRLEN + 1];
-        
 
     while (t != NULL) {
         t->ctx = new_context();
         t->ctx->trigger_config = t;
+        if (!(t->flags & APERMON_TRIGGER_SET_BAN_TIME)) {
+            t->min_ban_time = _config->min_ban_time;
+        }
+
         t = t->next;
     }
 
