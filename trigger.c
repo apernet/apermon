@@ -14,9 +14,11 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
 
     const apermon_flow_record *r = flows->records;
 
+    cond_begin(ctx);
+
     while (r != NULL) {
         if (config->conds == NULL || cond_list(r, config->conds)) {
-            select_flow(ctx, r);
+            select_flow(r);
         }
 
         r = r->next;
