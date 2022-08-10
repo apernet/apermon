@@ -11,7 +11,7 @@ static const apermon_net_handler handlers[] = {
 };
 
 static void handler_signal(__attribute__((unused)) int sig) {
-    stop_severs();
+    stop_servers(0);
 }
 
 static void help(const char *this) {
