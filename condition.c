@@ -62,6 +62,7 @@ int cond_src(const apermon_flow_record* record, const void* arg /* apermon_confi
     while (l != NULL) {
         p = l->prefix;
         if (p->af != record->flow_af) {
+            l = l->next;
             continue;
         }
 
@@ -90,6 +91,7 @@ int cond_dst(const apermon_flow_record* record, const void* arg /* apermon_confi
     while (l != NULL) {
         p = l->prefix;
         if (p->af != record->flow_af) {
+            l = l->next;
             continue;
         }
 
