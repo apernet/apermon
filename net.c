@@ -145,8 +145,19 @@ int start_servers() {
     return 0;
 }
 
-int stop_severs() {
-    log_info("shutting down servers...\n");
+int stop_servers(int silent) {
+    size_t i;
+    apermon_net_context *ctx;
+
+    if (!silent) {
+        log_info("shutting down servers...\n");
+    }
+
+    for (i = 0; i < _nfds; ++i) {
+        ctx = (apermon_net_context *) _events[i].data.ptr;
+
+        close(ctx->fd);
+    }
 
     _running = 0;
     return 0;

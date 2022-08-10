@@ -15,7 +15,7 @@ typedef struct _apermon_net_context {
 
 int init_servers(const apermon_config *config, const apermon_net_handler handlers[]);
 int start_servers();
-int stop_severs();
+int stop_servers(int silent);
 void free_severs();
 
 #endif // APERMON_NET_H
