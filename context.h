@@ -25,6 +25,7 @@ typedef struct _apermon_context {
 
     // context (persistent) info
     apermon_hash *aggr_hash; /* hashmap: inet/inet6 to aggr, own by us */
+    apermon_hash *trigger_status; /* hashmap: inet/inet6 to trigger status, owned by us */
     apermon_config_triggers *trigger_config; /* not own by us */
     time_t now;
     time_t last_gc;

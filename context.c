@@ -7,6 +7,7 @@ apermon_context *new_context() {
     apermon_context *ctx = (apermon_context *) malloc(sizeof(apermon_context));
     memset(ctx, 0, sizeof(apermon_context));
     ctx->aggr_hash = new_hash(20);
+    ctx->trigger_status = new_hash(4);
 
     return ctx;
 }
@@ -18,6 +19,10 @@ void free_context(apermon_context *ctx) {
 
     if (ctx->aggr_hash != NULL) {
         free_hash(ctx->aggr_hash, free_aflow);
+    }
+
+    if (ctx->trigger_status) {
+        free_hash(ctx->trigger_status, free);
     }
 
     free(ctx);
