@@ -160,7 +160,7 @@ apermon_hash *new_hash(uint8_t hash_key_bits) {
     memset(h, 0, sizeof(apermon_hash));
     h->hash_key_bits = hash_key_bits;
     h->hash_mask = (1 << hash_key_bits) - 1;
-    h->items = calloc(h->hash_mask, sizeof(apermon_hash_item *));
+    h->items = calloc(h->hash_mask + 1, sizeof(apermon_hash_item *));
 
     return h;
 }
