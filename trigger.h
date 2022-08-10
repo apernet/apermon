@@ -19,6 +19,8 @@ typedef struct _apermon_trigger_state {
     time_t first_triggered;
 } apermon_trigger_state;
 
+void init_triggers(const apermon_config *config);
+void triggers_timed_callback();
 int run_trigger(const apermon_config_triggers *config, const apermon_flows *flows);
 
 #endif // APERMON_TRIGGER_H

@@ -1,10 +1,9 @@
 #include <signal.h>
 #include "sflow.h"
-#include "extract.h"
 #include "log.h"
 #include "config.h"
-#include "hash.h"
 #include "net.h"
+#include "trigger.h"
 
 static const apermon_net_handler handlers[] = {
     handle_sflow_packet
@@ -42,6 +41,7 @@ int main(int argc, char **argv) {
     }
 
     init_sflow(config);
+    init_triggers(config);
 
     ret = start_servers();
     if (ret < 0) {

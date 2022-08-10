@@ -7,6 +7,7 @@
 #include "net.h"
 #include "hash.h"
 #include "log.h"
+#include "trigger.h"
 
 static int _running;
 static struct epoll_event _events[MAX_LISTENS], _eavil[MAX_EPOLL_EVENTS];
@@ -120,6 +121,8 @@ int start_servers() {
             log_fatal("epoll_wait(): %s\n", strerror(errno));
             return -1;
         }
+
+        triggers_timed_callback();
 
         for (j = 0; j < ret; ++j) {
             ctx = (apermon_net_context *) _eavil[j].data.ptr;

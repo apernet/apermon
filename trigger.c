@@ -10,6 +10,8 @@
 #include "net.h"
 #include "prefix-list.h"
 
+static const apermon_config *_config;
+
 static void run_trigger_script_ban(const apermon_config_triggers *config, const apermon_config_action_scripts *script, const apermon_aggregated_flow *flow, const apermon_aggregated_flow_average *metrics) {
     char **argv = calloc(2, sizeof(char *));
     char **envp = calloc(11, sizeof(char *));
@@ -348,7 +350,7 @@ static void fire_trigger(const apermon_config_triggers *config, const apermon_ag
     }
 }
 
-void unban_scan(apermon_context *ctx) {
+static void unban_scan(apermon_context *ctx) {
     apermon_hash_item *item = ctx->trigger_status->head;
     apermon_trigger_state *ts = NULL;
 
@@ -363,6 +365,32 @@ void unban_scan(apermon_context *ctx) {
     }
 }
 
+void init_triggers(const apermon_config *config) {
+    _config = config;
+}
+
+void triggers_timed_callback() {
+    apermon_config_triggers *t = _config->triggers;
+    apermon_context *ctx;
+    time_t now = time(NULL);
+
+    while (t != NULL) {
+        ctx = t->ctx;
+        ctx->now = now;
+
+        if (ctx->now - ctx->last_gc >= CONTEXT_GC_MIN_INTERVAL) {
+            gc_context(ctx);
+        }
+
+        if (ctx->now - ctx->last_unban_scan > TRIGGER_UNBAN_SCAN_INTERVAL) {
+            ctx->last_unban_scan = ctx->now;
+            unban_scan(ctx);
+        }
+
+        t = t->next;
+    }
+}
+
 int run_trigger(const apermon_config_triggers *config, const apermon_flows *flows) {
     apermon_context *ctx = config->ctx;
     apermon_hash_item *aggr;
@@ -372,13 +400,8 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     const apermon_flow_record *r = flows->records;
     const apermon_aggregated_flow_average *avg;
 
-    ctx->now = time(NULL);
     ctx->current_flows = flows;
     ctx->n_selected = 0;
-
-    if (ctx->now - ctx->last_gc >= CONTEXT_GC_MIN_INTERVAL) {
-        gc_context(ctx);
-    }
 
     cond_begin(ctx);
 
@@ -423,11 +446,6 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
         }
 
         aggr = aggr->iter_next;
-    }
-
-    if (ctx->now - ctx->last_unban_scan > TRIGGER_UNBAN_SCAN_INTERVAL) {
-        ctx->last_unban_scan = ctx->now;
-        unban_scan(ctx);
     }
 
     return 0;
