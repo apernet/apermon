@@ -50,8 +50,7 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
     for (i = 0; i < n; ++i) {
         if (af->last_uptime != now) {
             af->last_uptime = now;
-            ++af->running_average_index;
-            af->running_average_index = af->running_average_index % RUNNING_AVERAGE_SIZE;
+            af->running_average_index = (af->running_average_index + 1) % RUNNING_AVERAGE_SIZE;
         }
     }
 }
@@ -93,6 +92,11 @@ static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon
     return ad;
 }
 
+static void add_contrib_flow(apermon_aggregated_flow *af, const apermon_flow_record *flow) {
+    memcpy(&af->contrib_flows[af->contrib_flows_index], flow, sizeof(apermon_flow_record));
+    af->contrib_flows_index = (af->contrib_flows_index + 1) % CONTRIB_TRACK_SIZE;
+}
+
 static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context *ctx, uint32_t addr, const apermon_flow_record *flow, uint8_t dir) {
     apermon_aggregated_flow *af = hash32_find(ctx->aggr_hash, &addr), *oldval = NULL;
 
@@ -111,6 +115,7 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context
         log_warn("internal error: apermon_aggregated_flow struct replaced in hash\n");
     }
 
+    add_contrib_flow(af, flow);
     return aggergrate_update_agent_data(ctx->current_flows, af->agent_data, flow->frame_length * flow->rate, flow->rate, dir);
 }
 
@@ -132,19 +137,23 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_contex
         log_warn("internal error: apermon_aggregated_flow struct replaced in hash\n");
     }
 
+    add_contrib_flow(af, flow);
     return aggergrate_update_agent_data(ctx->current_flows, af->agent_data, flow->frame_length * flow->rate, flow->rate, dir);
 }
 
 static int aggergrate_flows_host(apermon_context *ctx) {
     const apermon_config_triggers *t = ctx->trigger_config;
     const apermon_flow_record *flow;
-    size_t n_modified = 0, i = 0;
+    size_t n_modified = 0, i;
     uint8_t dir;
     uint32_t now = ctx->current_flows->uptime; // unit: ms
 
     apermon_aggregated_agent_data *modifed_flows[MAX_RECORDS_PER_FLOW];
 
-    for (flow = ctx->selected_flows[i], dir = ctx->flow_directions[i]; i < ctx->n_selected; ++i) {
+    for (i = 0; i < ctx->n_selected; ++i) {
+        flow = ctx->selected_flows[i];
+        dir = ctx->flow_directions[i];
+
         if (t->flags & APERMON_TRIGGER_CHECK_INGRESS && dir == FLOW_INGRESS) {
             if (flow->flow_af == SFLOW_AF_INET) {
                 modifed_flows[n_modified++] = aggergrate_flows_host_inet(ctx, flow->dst_inet, flow, dir);
@@ -263,9 +272,11 @@ const apermon_aggregated_flow_average *running_average(const apermon_aggregated_
 void dump_flows(const apermon_context *ctx, int only_dirty) {
     apermon_hash_item *aggr = ctx->aggr_hash->head;
     apermon_aggregated_flow *af;
+    apermon_flow_record *fr;
+    size_t i;
     const apermon_aggregated_flow_average *avg;
 
-    char addr[INET6_ADDRSTRLEN + 1];
+    char addr[INET6_ADDRSTRLEN + 1], addr2[INET6_ADDRSTRLEN + 1];
 
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
@@ -287,6 +298,27 @@ void dump_flows(const apermon_context *ctx, int only_dirty) {
             ctx->trigger_config->name, ctx->current_flows->agent_name, addr,
             avg->in_bps, avg->out_bps, avg->in_pps, avg->out_pps
         );
+
+        for (i = 0; i < CONTRIB_TRACK_SIZE; ++i) {
+            fr = &af->contrib_flows[i];
+
+            if (fr->flow_af == SFLOW_AF_UNDEFINED) {
+                // likely contrib_flows list does not have CONTRIB_TRACK_SIZE elements yet
+                break;
+            }
+
+            if (fr->flow_af == SFLOW_AF_INET) {
+                inet_ntop(AF_INET, &fr->src_inet, addr, sizeof(addr));
+                inet_ntop(AF_INET, &fr->dst_inet, addr2, sizeof(addr2));
+            } else {
+                inet_ntop(AF_INET6, fr->src_inet6, addr, sizeof(addr));
+                inet_ntop(AF_INET6, fr->dst_inet6, addr2, sizeof(addr2));
+            }
+
+            log_debug("contrib flow proto %u, %s.%u -> %s.%u, %u bytes, %u pkts\n",
+                fr->l3_proto, addr, fr->src_port, addr2, fr->dst_port, fr->frame_length * fr->rate, fr->rate
+            );
+        }
 
         aggr = aggr->iter_next;
     }

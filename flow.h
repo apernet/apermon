@@ -3,7 +3,9 @@
 #include <stdint.h>
 #include "hash.h"
 #include "time.h"
+#include "extract.h"
 
+#define CONTRIB_TRACK_SIZE 100
 #define MAX_RECORDS_PER_FLOW 1024
 #define RUNNING_AVERAGE_SIZE 30
 #define FLOW_DUMP_BACKTRACK 10
@@ -33,6 +35,9 @@ typedef struct _apermon_aggregated_flow {
     };
 
     time_t last_modified;
+
+    apermon_flow_record contrib_flows[CONTRIB_TRACK_SIZE];
+    size_t contrib_flows_index;
 
     apermon_hash *agent_data; /* maps agent inet/inet6 to apermon_aggregated_agent_data */
 } apermon_aggregated_flow;
