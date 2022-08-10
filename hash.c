@@ -64,6 +64,7 @@ static inline void _hash_add_or_update(apermon_hash *tbl, uint32_t hashed_key, c
 
     item->key_len = key_len;
     item->key = malloc(key_len);
+    item->hashed_key = hashed_key;
     memset(item->key, 0, key_len);
     memcpy(item->key, key, key_len);
     item->value = value;
@@ -78,6 +79,8 @@ static inline void _hash_add_or_update(apermon_hash *tbl, uint32_t hashed_key, c
         tbl->tail->iter_next = item;
         tbl->tail = item;
     }
+
+    item->prev = prev;
 
     if (prev == NULL) {
         tbl->items[hashed_key] = item;
@@ -115,16 +118,31 @@ void *hash128_delete(apermon_hash *tbl, const uint8_t *key) {
 }
 
 apermon_hash_item *hash_erase(apermon_hash *tbl, apermon_hash_item *item, const hash_element_freer_func freer) {
-    apermon_hash_item *next = item->iter_next;
+    apermon_hash_item *inext = item->iter_next, *iprev = item->iter_prev;
+    apermon_hash_item *next = item->next, *prev = item->prev;
 
-    if (item->iter_next) {
-        item->iter_next->iter_prev = item->iter_prev;
+    if (inext) {
+        inext->iter_prev = iprev;
     }
 
-    if (item->iter_prev) {
-        item->iter_prev->iter_next = item->iter_next;
-    } else {
-        tbl->head = item->iter_next;
+    if (next) {
+        next->prev = prev;
+    }
+
+    if (iprev) {
+        iprev->iter_next = inext;
+    }
+
+    if (prev) {
+        prev->next = next;
+    }
+    
+    if (tbl->head == item) {
+        tbl->head = inext;
+    }
+
+    if (tbl->items[item->hashed_key] == item) {
+        tbl->items[item->hashed_key] = next;
     }
 
     if (freer) {
@@ -134,7 +152,7 @@ apermon_hash_item *hash_erase(apermon_hash *tbl, apermon_hash_item *item, const 
     free(item->key);
     free(item);
 
-    return next;
+    return inext;
 }
 
 apermon_hash *new_hash() {

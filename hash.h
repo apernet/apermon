@@ -7,10 +7,13 @@
 
 typedef struct _apermon_hash_item {
     size_t key_len;
+    uint32_t hashed_key;
     uint8_t *key; /* ownership: apermon_hash */
     void *value; /* ownership: caller */
 
     struct _apermon_hash_item *next;
+    struct _apermon_hash_item *prev;
+    
     struct _apermon_hash_item *iter_next;
     struct _apermon_hash_item *iter_prev;
 } apermon_hash_item;
