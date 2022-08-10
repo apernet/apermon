@@ -20,6 +20,8 @@ typedef struct _apermon_hash {
     apermon_hash_item *items[HASH_MASK]; /* ownership: apermon_hash */
 } apermon_hash;
 
+typedef void (*hash_element_freer_func)(void *value);
+
 void hash32_add_or_update(apermon_hash *tbl, const uint32_t *key, void *value, void **old_value);
 void *hash32_find(apermon_hash *tbl, const uint32_t *key);
 
@@ -27,6 +29,6 @@ void hash128_add_or_update(apermon_hash *tbl, const uint8_t *key, void *value, v
 void *hash128_find(apermon_hash *tbl, const uint8_t *key);
 
 apermon_hash *new_hash();
-void free_hash(apermon_hash *hash);
+void free_hash(apermon_hash *hash, const hash_element_freer_func freer);
 
 #endif // APERMON_HASH_H

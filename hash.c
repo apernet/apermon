@@ -101,8 +101,8 @@ apermon_hash *new_hash() {
     return h;
 }
 
-void free_hash(apermon_hash *hash) {
-    apermon_hash_item *item, *prev = NULL;
+void free_hash(apermon_hash *hash, const hash_element_freer_func freer) {
+        apermon_hash_item *item, *prev = NULL;
 
     if (hash == NULL) {
         return;
@@ -116,6 +116,10 @@ void free_hash(apermon_hash *hash) {
 
         if (item->key != NULL) {
             free(item->key);
+        }
+
+        if (freer != NULL) {
+            freer(item->value);
         }
 
         prev = item;
