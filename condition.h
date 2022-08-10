@@ -3,11 +3,6 @@
 #include "extract.h"
 #include "context.h"
 
-typedef struct _apermon_cond_selected_flows {
-    const apermon_flow_record *flow;
-    struct _apermon_cond_selected_flows *next;
-} apermon_cond_selected_flows;
-
 typedef int (*apermon_cond_func)(const apermon_flow_record* record, const void* arg);
 
 typedef struct _apermon_cond_func_list {
@@ -42,6 +37,5 @@ int cond_dst_port(const apermon_flow_record* record, const void* arg /* uint16_t
 /* misc functions */
 
 void select_flow(apermon_context *ctx, const apermon_flow_record *flow);
-void free_selected_flows(apermon_context *ctx);
 
 #endif // APERMON_CONDITION_H

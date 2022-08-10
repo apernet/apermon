@@ -10,6 +10,7 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     apermon_aggregated_flow *af;
 
     ctx->current_flows = flows;
+    ctx->n_selected = 0;
 
     const apermon_flow_record *r = flows->records;
 
@@ -25,8 +26,6 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
         log_warn("internal error: aggergrate_flows failed.\n");
     }
 
-    free_selected_flows(ctx);
-    
     aggr = ctx->aggr_hash->head;
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;

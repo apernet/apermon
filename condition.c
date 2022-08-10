@@ -125,18 +125,6 @@ int cond_dst_port(const apermon_flow_record* record, const void* arg /* uint16_t
     return (* (uint16_t *) arg) == record->dst_port;
 }
 
-static void append_flow(apermon_context *ctx, const apermon_flow_record *flow) {
-    apermon_cond_selected_flows *s = (apermon_cond_selected_flows *) malloc(sizeof(apermon_cond_selected_flows));
-    s->flow = flow;
-    s->next = NULL;
-
-    if (ctx->selected_flows_tail == NULL) {
-        ctx->selected_flows_tail = ctx->selected_flows = s;
-    } else {
-        ctx->selected_flows_tail->next = s;
-    }
-}
-
 void select_flow(apermon_context *ctx, const apermon_flow_record *flow) {
     const apermon_config_triggers *t = ctx->trigger_config;
     const apermon_config_prefix_lists_set *ls = t->networks;
@@ -147,39 +135,28 @@ void select_flow(apermon_context *ctx, const apermon_flow_record *flow) {
 
         if (flow->flow_af == SFLOW_AF_INET) {
             if ((t->flags & APERMON_TRIGGER_CHECK_INGRESS) && apermon_prefix_list_match_inet(ps, flow->dst_inet)) {
-                append_flow(ctx, flow);
+                ctx->flow_directions[ctx->n_selected] = FLOW_INGRESS;
+                ctx->selected_flows[ctx->n_selected] = flow;
+                ctx->n_selected++;
             } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && apermon_prefix_list_match_inet(ps, flow->src_inet)) {
-                append_flow(ctx, flow);
+                ctx->flow_directions[ctx->n_selected] = FLOW_EGRESS;
+                ctx->selected_flows[ctx->n_selected] = flow;
+                ctx->n_selected++;
             }
         } else if (flow->flow_af == SFLOW_AF_INET6) {
             if ((t->flags & APERMON_TRIGGER_CHECK_INGRESS) && apermon_prefix_list_match_inet6(ps, flow->dst_inet6)) {
-                append_flow(ctx, flow);
+                ctx->flow_directions[ctx->n_selected] = FLOW_INGRESS;
+                ctx->selected_flows[ctx->n_selected] = flow;
+                ctx->n_selected++;
             } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && apermon_prefix_list_match_inet6(ps, flow->src_inet6)) {
-                append_flow(ctx, flow);
+                ctx->flow_directions[ctx->n_selected] = FLOW_EGRESS;
+                ctx->selected_flows[ctx->n_selected] = flow;
+                ctx->n_selected++;
             }
         } else {
             log_error("bad af: %d\n", flow->flow_af);
         }
 
         ls = ls->next;
-    }
-}
-    
-
-
-void free_selected_flows(apermon_context *ctx) {
-    apermon_cond_selected_flows *s = ctx->selected_flows, *prev = NULL;
-
-    while (s != NULL) {
-        if (prev == NULL) {
-            free(prev);
-        }
-
-        prev = s;
-        s = s->next;
-    }
-
-    if (prev == NULL) {
-        free(prev);
     }
 }

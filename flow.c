@@ -112,18 +112,15 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_contex
 
 static int aggergrate_flows_host(apermon_context *ctx) {
     const apermon_config_triggers *t = ctx->trigger_config;
-    const apermon_cond_selected_flows *f = ctx->selected_flows;
     const apermon_flow_record *flow;
-
-    apermon_aggregated_agent_data *modifed_flows[MAX_RECORDS_PER_FLOW];
-    size_t n_modified = 0;
-
+    size_t n_modified = 0, i = 0;
+    uint8_t dir;
     uint32_t now = ctx->current_flows->uptime; // unit: ms
 
-    while (f != NULL) {
-        flow = f->flow;
+    apermon_aggregated_agent_data *modifed_flows[MAX_RECORDS_PER_FLOW];
 
-        if (t->flags & APERMON_TRIGGER_CHECK_INGRESS) {
+    for (flow = ctx->selected_flows[i], dir = ctx->flow_directions[i]; i < ctx->n_selected; ++i) {
+        if (t->flags & APERMON_TRIGGER_CHECK_INGRESS && dir == FLOW_INGRESS) {
             if (flow->flow_af == SFLOW_AF_INET) {
                 modifed_flows[n_modified++] = aggergrate_flows_host_inet(ctx, flow->dst_inet, flow);
             } else if (flow->flow_af == SFLOW_AF_INET6) {
@@ -131,7 +128,7 @@ static int aggergrate_flows_host(apermon_context *ctx) {
             } else {
                 log_error("internal error: bad af.\n");
             }
-        } else if (t->flags & APERMON_TRIGGER_CHECK_EGRESS) {
+        } else if (t->flags & APERMON_TRIGGER_CHECK_EGRESS && dir == FLOW_EGRESS) {
             if (flow->flow_af == SFLOW_AF_INET) {
                 modifed_flows[n_modified++] = aggergrate_flows_host_inet(ctx, flow->src_inet, flow);
             } else if (flow->flow_af == SFLOW_AF_INET6) {
@@ -139,16 +136,12 @@ static int aggergrate_flows_host(apermon_context *ctx) {
             } else {
                 log_error("internal error: bad af.\n");
             }
-        } else {
-            log_warn("no directions defined for trigger %s - no triggering will happen.\n", t->name);
         }
 
         if (n_modified >= MAX_RECORDS_PER_FLOW) {
             log_warn("too many records to aggergrate in one sample - max %d allowed. rests will be ignored.\n", MAX_RECORDS_PER_FLOW);
             break;
         }
-
-        f = f->next;
     }
 
     finalize_aggergration(modifed_flows, n_modified, now);
