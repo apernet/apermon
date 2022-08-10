@@ -41,6 +41,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    init_sflow(config);
+
     ret = start_servers();
     if (ret < 0) {
         return 1;
