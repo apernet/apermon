@@ -142,20 +142,24 @@ void select_flow(const apermon_flow_record *flow) {
                 _ctx->flow_directions[_ctx->n_selected] = FLOW_INGRESS;
                 _ctx->selected_flows[_ctx->n_selected] = flow;
                 _ctx->n_selected++;
+                break;
             } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && apermon_prefix_list_match_inet(ps, flow->src_inet)) {
                 _ctx->flow_directions[_ctx->n_selected] = FLOW_EGRESS;
                 _ctx->selected_flows[_ctx->n_selected] = flow;
                 _ctx->n_selected++;
+                break;
             }
         } else if (flow->flow_af == SFLOW_AF_INET6) {
             if ((t->flags & APERMON_TRIGGER_CHECK_INGRESS) && apermon_prefix_list_match_inet6(ps, flow->dst_inet6)) {
                 _ctx->flow_directions[_ctx->n_selected] = FLOW_INGRESS;
                 _ctx->selected_flows[_ctx->n_selected] = flow;
                 _ctx->n_selected++;
+                break;
             } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && apermon_prefix_list_match_inet6(ps, flow->src_inet6)) {
                 _ctx->flow_directions[_ctx->n_selected] = FLOW_EGRESS;
                 _ctx->selected_flows[_ctx->n_selected] = flow;
                 _ctx->n_selected++;
+                break;
             }
         } else {
             log_error("bad af: %d\n", flow->flow_af);
