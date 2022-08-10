@@ -12,6 +12,7 @@ typedef struct _apermon_hash_item {
 
     struct _apermon_hash_item *next;
     struct _apermon_hash_item *iter_next;
+    struct _apermon_hash_item *iter_prev;
 } apermon_hash_item;
 
 typedef struct _apermon_hash {
@@ -24,9 +25,13 @@ typedef void (*hash_element_freer_func)(void *value);
 
 void hash32_add_or_update(apermon_hash *tbl, const uint32_t *key, void *value, void **old_value);
 void *hash32_find(apermon_hash *tbl, const uint32_t *key);
+void *hash32_delete(apermon_hash *tbl, const uint32_t *key);
 
 void hash128_add_or_update(apermon_hash *tbl, const uint8_t *key, void *value, void **old_value);
 void *hash128_find(apermon_hash *tbl, const uint8_t *key);
+void *hash128_delete(apermon_hash *tbl, const uint8_t *key);
+
+apermon_hash_item *hash_erase(apermon_hash *tbl, apermon_hash_item *item, const hash_element_freer_func freer);
 
 apermon_hash *new_hash();
 void free_hash(apermon_hash *hash, const hash_element_freer_func freer);

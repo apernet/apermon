@@ -15,7 +15,7 @@ static inline uint32_t hash128(const uint8_t *buf) {
     return res & HASH_MASK;
 }
 
-static inline void *_hash_find(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len, apermon_hash_item **last) {
+static inline apermon_hash_item *_hash_find(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len, apermon_hash_item **last) {
     apermon_hash_item *item = tbl->items[hashed_key], *target = NULL, *prev = NULL;
 
     while (item != NULL) {
@@ -39,6 +39,16 @@ static inline void *_hash_find(apermon_hash *tbl, uint32_t hashed_key, const uin
     return target;
 }
 
+static inline void *_hash_delete(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len) {
+    apermon_hash_item *item = _hash_find(tbl, hashed_key, key, key_len, NULL);
+
+    void *val = item->value;
+
+    hash_erase(tbl, item, NULL);
+
+    return val;
+}
+
 static inline void _hash_add_or_update(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len, void *value, void **old_value) {
     apermon_hash_item *target, *prev = NULL;
 
@@ -60,6 +70,8 @@ static inline void _hash_add_or_update(apermon_hash *tbl, uint32_t hashed_key, c
     item->next = NULL;
 
     item->iter_next = NULL;
+    item->iter_prev = tbl->tail;
+
     if (tbl->head == NULL) {
         tbl->head = tbl->tail = item;
     } else {
@@ -92,6 +104,37 @@ void *hash128_find(apermon_hash *tbl, const uint8_t *key) {
     apermon_hash_item *item = _hash_find(tbl, hash128(key), key, 16 * sizeof(uint8_t), NULL);
 
     return item == NULL ? NULL : item->value;
+}
+
+void *hash32_delete(apermon_hash *tbl, const uint32_t *key) {
+    return _hash_delete(tbl, hash32(key), (uint8_t *) key, sizeof(uint32_t));
+}
+
+void *hash128_delete(apermon_hash *tbl, const uint8_t *key) {
+    return _hash_delete(tbl, hash128(key), key, 16 * sizeof(uint8_t));
+}
+
+apermon_hash_item *hash_erase(apermon_hash *tbl, apermon_hash_item *item, const hash_element_freer_func freer) {
+    apermon_hash_item *next = item->iter_next;
+
+    if (item->iter_next) {
+        item->iter_next->iter_prev = item->iter_prev;
+    }
+
+    if (item->iter_prev) {
+        item->iter_prev->iter_next = item->iter_next;
+    } else {
+        tbl->head = item->iter_next;
+    }
+
+    if (freer) {
+        freer(item->value);
+    }
+
+    free(item->key);
+    free(item);
+
+    return next;
 }
 
 apermon_hash *new_hash() {
