@@ -10,9 +10,13 @@ int apermon_prefix_match_inet(const apermon_prefix* pfx, uint32_t addr) {
 }
 
 int apermon_prefix_match_inet6(const apermon_prefix* lst, const uint8_t *addr) {
-    // todo
+    uint8_t i, masked[16];
 
-    return 0;
+    for (i = 0; i < sizeof(masked); ++i) {
+        masked[i] = addr[i] & lst->mask6[i];
+    }
+
+    return memcmp(masked, lst->inet6, sizeof(masked)) == 0;
 }
 
 int apermon_prefix_list_match_inet(const apermon_config_prefix_list_elements* lst, uint32_t addr) {
