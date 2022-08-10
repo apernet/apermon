@@ -247,8 +247,8 @@ uint64_t running_average_pps(const apermon_aggregated_flow *af) {
     return sum / data_count;
 }
 
-void dump_flows(const apermon_hash *aggr_hash) {
-    apermon_hash_item *aggr = aggr_hash->head;
+void dump_flows(const apermon_context *ctx) {
+    apermon_hash_item *aggr = ctx->aggr_hash->head;
     apermon_aggregated_flow *af;
 
     char addr[INET6_ADDRSTRLEN + 1];
@@ -262,7 +262,10 @@ void dump_flows(const apermon_hash *aggr_hash) {
             inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
         }
 
-        log_debug("%s: %lu bps, %lu pps\n", addr, running_average_bps(af), running_average_pps(af));
+        log_debug("trigger %s, agent %s - %s: %lu bps, %lu pps\n",
+            ctx->trigger_config->name, ctx->current_flows->agent_name, addr,
+            running_average_bps(af), running_average_pps(af)
+        );
 
         aggr = aggr->iter_next;
     }

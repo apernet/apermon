@@ -44,6 +44,6 @@ void free_agent_data(apermon_aggregated_agent_data *data);
 uint64_t running_average_bps(const apermon_aggregated_flow *af);
 uint64_t running_average_pps(const apermon_aggregated_flow *af);
 
-void dump_flows(const apermon_hash *aggr_hash);
+void dump_flows(const apermon_context *ctx);
 
 #endif // APERMON_FLOW_H
