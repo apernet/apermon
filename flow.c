@@ -99,10 +99,10 @@ static void add_contrib_flow(apermon_aggregated_flow *af, const apermon_flow_rec
 
 static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context *ctx, uint32_t addr, const apermon_flow_record *flow, uint8_t dir) {
     apermon_aggregated_flow *af = hash32_find(ctx->aggr_hash, &addr), *oldval = NULL;
-    uint32_t rate = ctx->current_flows->agent->sample_rate_cap;
+    uint32_t rate = flow->rate, cap = ctx->current_flows->agent->sample_rate_cap;
 
-    if (flow->rate < rate) {
-        rate = flow->rate;
+    if (cap > 0 && flow->rate > cap) {
+        rate = cap;
     }
 
     if (af == NULL) {
@@ -126,10 +126,10 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context
 
 static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_context *ctx, const uint8_t *addr, const apermon_flow_record *flow, uint8_t dir) {
     apermon_aggregated_flow *af = hash128_find(ctx->aggr_hash, addr), *oldval = NULL;
-    uint32_t rate = ctx->current_flows->agent->sample_rate_cap;
+    uint32_t rate = flow->rate, cap = ctx->current_flows->agent->sample_rate_cap;
 
-    if (flow->rate < rate) {
-        rate = flow->rate;
+    if (cap > 0 && flow->rate > cap) {
+        rate = cap;
     }
 
     if (af == NULL) {
