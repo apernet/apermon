@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <arpa/inet.h>
 #include "flow.h"
 #include "context.h"
 #include "condition.h"
@@ -244,4 +245,25 @@ uint64_t running_average_pps(const apermon_aggregated_flow *af) {
     }
 
     return sum / data_count;
+}
+
+void dump_flows(const apermon_hash *aggr_hash) {
+    apermon_hash_item *aggr = aggr_hash->head;
+    apermon_aggregated_flow *af;
+
+    char addr[INET6_ADDRSTRLEN + 1];
+
+    while (aggr != NULL) {
+        af = (apermon_aggregated_flow *) aggr->value;
+
+        if (af->flow_af == SFLOW_AF_INET) {
+            inet_ntop(AF_INET, &af->inet, addr, sizeof(addr));
+        } else {
+            inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
+        }
+
+        log_debug("%s: %lu bps, %lu pps\n", addr, running_average_bps(af), running_average_pps(af));
+
+        aggr = aggr->iter_next;
+    }
 }
