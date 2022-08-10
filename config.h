@@ -5,6 +5,7 @@
 #include <netdb.h>
 #include <stdio.h>
 #include "prefix-list.h"
+#include "hash.h"
 
 enum listen_protocol {
     APERMON_LISTEN_SFLOW_V5,
@@ -122,6 +123,8 @@ typedef struct _apermon_config {
     apermon_config_prefix_lists *prefix_lists;
     apermon_config_actions *actions;
     apermon_config_triggers *triggers;
+
+    apermon_hash *agents_hash; /* maps agent inet/inet6 -> agent struct */
 
     uint32_t min_ban_time;
 } apermon_config;

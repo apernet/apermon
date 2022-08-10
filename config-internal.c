@@ -213,11 +213,53 @@ void start_config() {
 
 void end_config() {
     apermon_config_triggers *t = _config->triggers;
+    apermon_config_agents *a = _config->agents;
+    apermon_config_agent_addresses *aa = NULL, *old = NULL;
+
+    char addr[INET6_ADDRSTRLEN + 1];
+        
+
     while (t != NULL) {
         t->ctx = new_context();
         t->ctx->trigger_config = t;
         t = t->next;
     }
+
+    _config->agents_hash = new_hash();
+
+    while (a != NULL) {
+        aa = a->addresses;
+        while (aa != NULL) {
+            if (aa->af == AF_INET) {
+                hash32_add_or_update(_config->agents_hash, (uint32_t *) &aa->inet, a, (void **) &old);
+            } else if (aa->af == AF_INET6) {
+                hash128_add_or_update(_config->agents_hash, (uint8_t *) &aa->inet6, a, (void **) &old);
+            } else {
+                log_error("unknown address family %d for agent '%s'\n", aa->af, a->name);
+                store_retval(-1);
+                return;
+            }
+
+            if (old != NULL) {
+                if (aa->af == AF_INET) {
+                    inet_ntop(AF_INET, &aa->inet, addr, sizeof(addr));
+                } else {
+                    inet_ntop(AF_INET6, &aa->inet6, addr, sizeof(addr));
+                }
+
+                log_error("duplicate agent address '%s' in agent '%s'\n", addr, a->name);
+
+                store_retval(-1);
+                return;
+            }
+
+            aa = aa->next;
+        }
+
+        a = a->next;
+    }
+
+    // todo: additional checks
 }
 
 void store_retval(int retval) {

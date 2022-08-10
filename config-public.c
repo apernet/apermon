@@ -235,5 +235,9 @@ void free_config(apermon_config *config) {
         free(prev_t);
     }
 
+    if (config->agents_hash != NULL) {
+        free_hash(config->agents_hash, NULL);
+    }
+
     free(config);
 }
