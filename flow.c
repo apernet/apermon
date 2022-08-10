@@ -27,7 +27,7 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
         }
 
         if (af->last_uptime == now) {
-            log_warn("last update is the same as now - retr / replay attack?\n");
+            log_debug("last update is the same as now - retr / replay attack?\n");
             return;
         }
 
