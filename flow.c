@@ -26,7 +26,7 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
 
         dt = now - af->last_uptime;
         af->pps[af->running_average_index] += af->current_pkts * 1000 / dt;
-        af->bps[af->running_average_index] += af->current_bytes * 8 * 1000 / dt;
+        af->bps[af->running_average_index] += af->current_bytes * 1000 / dt / 8;
     }
 
     for (i = 0; i < n; ++i) {
