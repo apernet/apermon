@@ -43,7 +43,7 @@ typedef struct _apermon_flows {
     uint32_t seq;
     uint32_t uptime;
 
-    const char* agent_name; /* not owned by us */
+    const apermon_config_agents* agent; /* not owned by us */
 
     apermon_flow_record *records;
 } apermon_flows;

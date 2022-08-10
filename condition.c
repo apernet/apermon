@@ -51,7 +51,7 @@ int cond_in_interface(const apermon_flow_record* record, const void* arg /* aper
     apermon_config_interfaces *iface = *(apermon_config_interfaces **) arg;
     apermon_config_ifindexes *ifindex = iface->ifindexes;
     while (ifindex != NULL) {
-        if (strcmp(ifindex->agent->name, _ctx->current_flows->agent_name) != 0) {
+        if (ifindex->agent != _ctx->current_flows->agent) {
             ifindex = ifindex->next;
             continue;
         }
@@ -70,7 +70,7 @@ int cond_out_interface(const apermon_flow_record* record, const void* arg /* ape
     apermon_config_interfaces *iface = *(apermon_config_interfaces **) arg;
     apermon_config_ifindexes *ifindex = iface->ifindexes;
     while (ifindex != NULL) {
-        if (strcmp(ifindex->agent->name, _ctx->current_flows->agent_name) != 0) {
+        if (ifindex->agent != _ctx->current_flows->agent) {
             ifindex = ifindex->next;
             continue;
         }

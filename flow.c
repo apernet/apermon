@@ -295,7 +295,7 @@ void dump_flows(const apermon_context *ctx, int only_dirty) {
         avg = running_average(af);
 
         log_debug("instance %s, submmited by %s for %s: %lu bps in, %lu bps out, %lu pps in, %lu pps out\n",
-            ctx->trigger_config->name, ctx->current_flows->agent_name, addr,
+            ctx->trigger_config->name, ctx->current_flows->agent->name, addr,
             avg->in_bps, avg->out_bps, avg->in_pps, avg->out_pps
         );
 

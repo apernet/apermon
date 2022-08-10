@@ -219,7 +219,7 @@ ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
         goto skip_packet;
     }
     
-    flows->agent_name = a->name;
+    flows->agent = a;
     log_debug("sflow packet from %s\n", a->name);
 
     while (trigger != NULL) {
