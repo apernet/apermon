@@ -6,6 +6,8 @@
 #include "condition.h"
 #include "log.h"
 
+static apermon_aggregated_flow_average _running_average;
+
 static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, uint32_t now) {
     size_t i;
     uint32_t dt;
@@ -13,8 +15,10 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
 
     for (i = 0; i < n; ++i) {
         af = as[i];
-        af->bps[af->running_average_index] = 0;
-        af->pps[af->running_average_index] = 0;
+        af->in_bps[af->running_average_index] = 0;
+        af->in_pps[af->running_average_index] = 0;
+        af->out_bps[af->running_average_index] = 0;
+        af->out_pps[af->running_average_index] = 0;
     }
 
     for (i = 0; i < n; ++i) {
@@ -32,11 +36,15 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
         }
 
         dt = now - af->last_uptime;
-        af->pps[af->running_average_index] += af->current_pkts * 1000 / dt;
-        af->bps[af->running_average_index] += af->current_bytes * 8 * 1000 / dt;
+        af->in_pps[af->running_average_index] += af->current_in_pkts * 1000 / dt;
+        af->in_bps[af->running_average_index] += af->current_in_bytes * 8 * 1000 / dt;
+        af->out_pps[af->running_average_index] += af->current_out_pkts * 1000 / dt;
+        af->out_bps[af->running_average_index] += af->current_out_bytes * 8 * 1000 / dt;
 
-        af->current_pkts = 0;
-        af->current_bytes = 0;
+        af->current_in_pkts = 0;
+        af->current_in_bytes = 0;
+        af->current_out_pkts = 0;
+        af->current_out_bytes = 0;
     }
 
     for (i = 0; i < n; ++i) {
@@ -48,7 +56,7 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
     }
 }
 
-static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon_flows *flows, apermon_hash *agent_hash, uint64_t current_bytes, uint64_t current_pkts) {
+static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon_flows *flows, apermon_hash *agent_hash, uint64_t current_bytes, uint64_t current_pkts, uint8_t dir) {
     apermon_aggregated_agent_data *ad, *oldval = NULL;
 
     if (flows->agent_af == SFLOW_AF_INET) {
@@ -64,8 +72,13 @@ static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon
         ad = new_agent_data();
     }
 
-    ad->current_bytes += current_bytes;
-    ad->current_pkts += current_pkts;
+    if (dir == FLOW_INGRESS) {
+        ad->current_in_bytes += current_bytes;
+        ad->current_in_pkts += current_pkts;
+    } else {
+        ad->current_out_bytes += current_bytes;
+        ad->current_out_pkts += current_pkts;
+    }
 
     if (flows->agent_af == SFLOW_AF_INET) {
         hash32_add_or_update(agent_hash, &flows->agent_inet, ad, (void **) &oldval);
@@ -80,7 +93,7 @@ static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon
     return ad;
 }
 
-static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context *ctx, uint32_t addr, const apermon_flow_record *flow) {
+static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context *ctx, uint32_t addr, const apermon_flow_record *flow, uint8_t dir) {
     apermon_aggregated_flow *af = hash32_find(ctx->aggr_hash, &addr), *oldval = NULL;
 
     if (af == NULL) {
@@ -98,10 +111,10 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context
         log_warn("internal error: apermon_aggregated_flow struct replaced in hash\n");
     }
 
-    return aggergrate_update_agent_data(ctx->current_flows, af->agent_data, flow->frame_length * flow->rate, flow->rate);
+    return aggergrate_update_agent_data(ctx->current_flows, af->agent_data, flow->frame_length * flow->rate, flow->rate, dir);
 }
 
-static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_context *ctx, const uint8_t *addr, const apermon_flow_record *flow) {
+static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_context *ctx, const uint8_t *addr, const apermon_flow_record *flow, uint8_t dir) {
     apermon_aggregated_flow *af = hash128_find(ctx->aggr_hash, addr), *oldval = NULL;
 
     if (af == NULL) {
@@ -119,7 +132,7 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_contex
         log_warn("internal error: apermon_aggregated_flow struct replaced in hash\n");
     }
 
-    return aggergrate_update_agent_data(ctx->current_flows, af->agent_data, flow->frame_length * flow->rate, flow->rate);
+    return aggergrate_update_agent_data(ctx->current_flows, af->agent_data, flow->frame_length * flow->rate, flow->rate, dir);
 }
 
 static int aggergrate_flows_host(apermon_context *ctx) {
@@ -134,17 +147,17 @@ static int aggergrate_flows_host(apermon_context *ctx) {
     for (flow = ctx->selected_flows[i], dir = ctx->flow_directions[i]; i < ctx->n_selected; ++i) {
         if (t->flags & APERMON_TRIGGER_CHECK_INGRESS && dir == FLOW_INGRESS) {
             if (flow->flow_af == SFLOW_AF_INET) {
-                modifed_flows[n_modified++] = aggergrate_flows_host_inet(ctx, flow->dst_inet, flow);
+                modifed_flows[n_modified++] = aggergrate_flows_host_inet(ctx, flow->dst_inet, flow, dir);
             } else if (flow->flow_af == SFLOW_AF_INET6) {
-                modifed_flows[n_modified++] = aggergrate_flows_host_inet6(ctx, flow->dst_inet6, flow);
+                modifed_flows[n_modified++] = aggergrate_flows_host_inet6(ctx, flow->dst_inet6, flow, dir);
             } else {
                 log_error("internal error: bad af.\n");
             }
         } else if (t->flags & APERMON_TRIGGER_CHECK_EGRESS && dir == FLOW_EGRESS) {
             if (flow->flow_af == SFLOW_AF_INET) {
-                modifed_flows[n_modified++] = aggergrate_flows_host_inet(ctx, flow->src_inet, flow);
+                modifed_flows[n_modified++] = aggergrate_flows_host_inet(ctx, flow->src_inet, flow, dir);
             } else if (flow->flow_af == SFLOW_AF_INET6) {
-                modifed_flows[n_modified++] = aggergrate_flows_host_inet6(ctx, flow->src_inet6, flow);
+                modifed_flows[n_modified++] = aggergrate_flows_host_inet6(ctx, flow->src_inet6, flow, dir);
             } else {
                 log_error("internal error: bad af.\n");
             }
@@ -169,8 +182,6 @@ static int aggergrate_flows_net(apermon_context *ctx) {
 int aggergrate_flows(apermon_context *ctx) {
     const apermon_config_triggers *t = ctx->trigger_config;
     int ret = -1;
-
-    // todo: skip if agent not configured?
 
     if (t->aggregator == APERMON_AGGREGATOR_HOST) {
         ret = aggergrate_flows_host(ctx);
@@ -220,47 +231,39 @@ void free_agent_data(apermon_aggregated_agent_data *data) {
     free(data);
 }
 
-uint64_t running_average_bps(const apermon_aggregated_flow *af) {
-    uint64_t sum = 0;
+const apermon_aggregated_flow_average *running_average(const apermon_aggregated_flow *af) {
     size_t i = 0, data_count = 0;
     const apermon_hash_item *a = af->agent_data->head;
     const apermon_aggregated_agent_data *ad;
 
+    _running_average.in_bps = _running_average.out_bps = 0;
+    _running_average.in_pps = _running_average.out_pps = 0;
+
     while (a != NULL) {
         ad = (const apermon_aggregated_agent_data *) a->value;
         for (i = 0; i < RUNNING_AVERAGE_SIZE; ++i) {
-            sum += ad->bps[i];
+            _running_average.in_bps += ad->in_bps[i];
+            _running_average.out_bps += ad->out_bps[i];
+            _running_average.in_pps += ad->in_pps[i];
+            _running_average.out_pps += ad->out_pps[i];
         }
 
         data_count += RUNNING_AVERAGE_SIZE;
         a = a->next;
     }
 
-    return sum / data_count;
-}
+    _running_average.in_bps /= data_count;
+    _running_average.out_bps /= data_count;
+    _running_average.in_pps /= data_count;
+    _running_average.out_pps /= data_count;
 
-uint64_t running_average_pps(const apermon_aggregated_flow *af) {
-    uint64_t sum = 0;
-    size_t i = 0, data_count = 0;
-    const apermon_hash_item *a = af->agent_data->head;
-    const apermon_aggregated_agent_data *ad;
-
-    while (a != NULL) {
-        ad = (const apermon_aggregated_agent_data *) a->value;
-        for (i = 0; i < RUNNING_AVERAGE_SIZE; ++i) {
-            sum += ad->pps[i];
-        }
-
-        data_count += RUNNING_AVERAGE_SIZE;
-        a = a->next;
-    }
-
-    return sum / data_count;
+    return &_running_average;
 }
 
 void dump_flows(const apermon_context *ctx, int only_dirty) {
     apermon_hash_item *aggr = ctx->aggr_hash->head;
     apermon_aggregated_flow *af;
+    const apermon_aggregated_flow_average *avg;
 
     char addr[INET6_ADDRSTRLEN + 1];
 
@@ -278,9 +281,11 @@ void dump_flows(const apermon_context *ctx, int only_dirty) {
             inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
         }
 
-        log_debug("instance %s, submmited by %s for %s: %lu bps, %lu pps\n",
+        avg = running_average(af);
+
+        log_debug("instance %s, submmited by %s for %s: %lu bps in, %lu bps out, %lu pps in, %lu pps out\n",
             ctx->trigger_config->name, ctx->current_flows->agent_name, addr,
-            running_average_bps(af), running_average_pps(af)
+            avg->in_bps, avg->out_bps, avg->in_pps, avg->out_pps
         );
 
         aggr = aggr->iter_next;

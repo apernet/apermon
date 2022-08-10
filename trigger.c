@@ -11,6 +11,7 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     uint64_t bps, pps;
 
     const apermon_flow_record *r = flows->records;
+    const apermon_aggregated_flow_average *avg;
 
     ctx->now = time(NULL);
     ctx->current_flows = flows;
@@ -47,15 +48,17 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
         }
 
         af->dirty = 0;
+        avg = running_average(af);
+        
+        bps = avg->in_bps > avg->out_bps ? avg->in_bps : avg->out_bps;
+        pps = avg->in_pps > avg->out_pps ? avg->in_pps : avg->out_pps;
 
         if (config->bps > 0) {
-            bps = running_average_bps(af); 
             if (bps >= config->bps) {
                 log_info("trigger: %s (bps: %lu > %lu)\n", config->name, bps, config->bps);
                 // todo
             }
         } else if (config->pps > 0) {
-            pps = running_average_pps(af);
             if (pps >= config->pps) {
                 log_info("trigger: %s (pps: %lu > %lu)\n", config->name, pps, config->pps);
                 // todo
