@@ -2,8 +2,6 @@
 #define APERMON_HASH_H
 #include <stdint.h>
 #include <unistd.h>
-#define HASH_SIZE 20
-#define HASH_MASK ((1 << HASH_SIZE) - 1)
 
 typedef struct _apermon_hash_item {
     size_t key_len;
@@ -21,7 +19,10 @@ typedef struct _apermon_hash_item {
 typedef struct _apermon_hash {
     apermon_hash_item *head;
     apermon_hash_item *tail;
-    apermon_hash_item *items[HASH_MASK]; /* ownership: apermon_hash */
+
+    uint8_t hash_key_bits;
+    uint32_t hash_mask;
+    apermon_hash_item **items; /* ownership: apermon_hash */
 } apermon_hash;
 
 typedef void (*hash_element_freer_func)(void *value);
@@ -36,7 +37,7 @@ void *hash128_delete(apermon_hash *tbl, const uint8_t *key);
 
 apermon_hash_item *hash_erase(apermon_hash *tbl, apermon_hash_item *item, const hash_element_freer_func freer);
 
-apermon_hash *new_hash();
+apermon_hash *new_hash(uint8_t hash_key_bits);
 void free_hash(apermon_hash *hash, const hash_element_freer_func freer);
 
 #endif // APERMON_HASH_H

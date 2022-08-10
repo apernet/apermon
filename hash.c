@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include "hash.h"
 
-static inline uint32_t hash32(const uint32_t *buf) {
-    return __builtin_ia32_crc32si(0, *buf) & HASH_MASK;
+static inline uint32_t hash32(apermon_hash *hash, const uint32_t *buf) {
+    return __builtin_ia32_crc32si(0, *buf) & hash->hash_mask;
 }
 
-static inline uint32_t hash128(const uint8_t *buf) {
+static inline uint32_t hash128(apermon_hash *hash, const uint8_t *buf) {
     uint32_t res = 0, i;
     for (i = 0; i < 16 / sizeof(uint32_t); ++i, buf += 4) {
         res = __builtin_ia32_crc32si(res, * (uint32_t *) buf);
     }
 
-    return res & HASH_MASK;
+    return res & hash->hash_mask;
 }
 
 static inline apermon_hash_item *_hash_find(apermon_hash *tbl, uint32_t hashed_key, const uint8_t *key, size_t key_len, apermon_hash_item **last) {
@@ -90,31 +90,31 @@ static inline void _hash_add_or_update(apermon_hash *tbl, uint32_t hashed_key, c
 }
 
 void hash32_add_or_update(apermon_hash *tbl, const uint32_t *key, void *value, void **old_value) {
-    return _hash_add_or_update(tbl, hash32(key), (uint8_t *) key, sizeof(uint32_t), value, old_value);
+    return _hash_add_or_update(tbl, hash32(tbl, key), (uint8_t *) key, sizeof(uint32_t), value, old_value);
 }
 
 void hash128_add_or_update(apermon_hash *tbl, const uint8_t *key, void *value, void **old_value) {
-    return _hash_add_or_update(tbl, hash128(key), key, 16 * sizeof(uint8_t), value, old_value);
+    return _hash_add_or_update(tbl, hash128(tbl, key), key, 16 * sizeof(uint8_t), value, old_value);
 }
 
 void *hash32_find(apermon_hash *tbl, const uint32_t *key) {
-    apermon_hash_item *item = _hash_find(tbl, hash32(key), (uint8_t *) key, sizeof(uint32_t), NULL);
+    apermon_hash_item *item = _hash_find(tbl, hash32(tbl, key), (uint8_t *) key, sizeof(uint32_t), NULL);
 
     return item == NULL ? NULL : item->value;
 }
 
 void *hash128_find(apermon_hash *tbl, const uint8_t *key) {
-    apermon_hash_item *item = _hash_find(tbl, hash128(key), key, 16 * sizeof(uint8_t), NULL);
+    apermon_hash_item *item = _hash_find(tbl, hash128(tbl, key), key, 16 * sizeof(uint8_t), NULL);
 
     return item == NULL ? NULL : item->value;
 }
 
 void *hash32_delete(apermon_hash *tbl, const uint32_t *key) {
-    return _hash_delete(tbl, hash32(key), (uint8_t *) key, sizeof(uint32_t));
+    return _hash_delete(tbl, hash32(tbl, key), (uint8_t *) key, sizeof(uint32_t));
 }
 
 void *hash128_delete(apermon_hash *tbl, const uint8_t *key) {
-    return _hash_delete(tbl, hash128(key), key, 16 * sizeof(uint8_t));
+    return _hash_delete(tbl, hash128(tbl, key), key, 16 * sizeof(uint8_t));
 }
 
 apermon_hash_item *hash_erase(apermon_hash *tbl, apermon_hash_item *item, const hash_element_freer_func freer) {
@@ -155,9 +155,12 @@ apermon_hash_item *hash_erase(apermon_hash *tbl, apermon_hash_item *item, const 
     return inext;
 }
 
-apermon_hash *new_hash() {
+apermon_hash *new_hash(uint8_t hash_key_bits) {
     apermon_hash *h = (apermon_hash *) malloc(sizeof(apermon_hash));
     memset(h, 0, sizeof(apermon_hash));
+    h->hash_key_bits = hash_key_bits;
+    h->hash_mask = (1 << hash_key_bits) - 1;
+    h->items = calloc(h->hash_mask, sizeof(apermon_hash_item *));
 
     return h;
 }
@@ -191,5 +194,6 @@ void free_hash(apermon_hash *hash, const hash_element_freer_func freer) {
         free(prev);
     }
 
+    free(hash->items);
     free(hash);
 }
