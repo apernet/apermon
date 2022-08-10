@@ -4,6 +4,7 @@
 #include "log.h"
 #include "extract.h"
 #include "trigger.h"
+#include "context.h"
 
 static const apermon_config *_config;
 
@@ -184,6 +185,9 @@ ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
 
     char agent_addr[INET6_ADDRSTRLEN + 1];
 
+    const apermon_config_agents *a = NULL;
+
+
     pased_len = parse_sflow(packet, packet_len, &parsed);
 
     if (pased_len < 0) {
@@ -197,18 +201,33 @@ ssize_t handle_sflow_packet(const uint8_t *packet, size_t packet_len) {
     }
 
     if (flows->agent_af == SFLOW_AF_INET) {
-        inet_ntop(AF_INET, &flows->agent_inet, agent_addr, sizeof(agent_addr));
+        a = hash32_find(_config->agents_hash, &flows->agent_inet);
+    } else if (flows->agent_af == SFLOW_AF_INET6) {
+        a = hash128_find(_config->agents_hash, flows->agent_inet6);
     } else {
-        inet_ntop(AF_INET6, flows->agent_inet6, agent_addr, sizeof(agent_addr));
+        log_error("internal error: agent af invalid (%u).\n", flows->agent_af);
+    }
+
+    if (a == NULL) {
+        if (flows->agent_af == SFLOW_AF_INET) {
+            inet_ntop(AF_INET, &flows->agent_inet, agent_addr, sizeof(agent_addr));
+        } else {
+            inet_ntop(AF_INET6, flows->agent_inet6, agent_addr, sizeof(agent_addr));
+        }
+
+        log_warn("got flow from unknown agent '%s'.\n", agent_addr);
+        goto skip_packet;
     }
     
-    log_debug("sflow packet from %s\n", agent_addr);
+    flows->agent_name = a->name;
+    log_debug("sflow packet from %s\n", a->name);
 
     while (trigger != NULL) {
         run_trigger(trigger, flows);
         trigger = trigger->next;
     }
 
+skip_packet:
     free_apermon_flows(flows);
     free_sflow(parsed);
 
