@@ -49,70 +49,66 @@ int cond_list(const apermon_flow_record* record, const void* arg /* apermon_cond
 
 int cond_in_interface(const apermon_flow_record* record, const void* arg /* apermon_config_interfaces** */) {
     apermon_config_interfaces *iface = *(apermon_config_interfaces **) arg;
-    // todo
+    apermon_config_ifindexes *ifindex = iface->ifindexes;
+    while (ifindex != NULL) {
+        if (strcmp(ifindex->agent->name, _ctx->current_flows->agent_name) != 0) {
+            ifindex = ifindex->next;
+            continue;
+        }
+
+        if (ifindex->ifindex == record->in_ifindex) {
+            return 1;
+        }
+
+        ifindex = ifindex->next;
+    }
+
     return 0;
 }
 
 int cond_out_interface(const apermon_flow_record* record, const void* arg /* apermon_config_interfaces** */) {
     apermon_config_interfaces *iface = *(apermon_config_interfaces **) arg;
-    // todo
+    apermon_config_ifindexes *ifindex = iface->ifindexes;
+    while (ifindex != NULL) {
+        if (strcmp(ifindex->agent->name, _ctx->current_flows->agent_name) != 0) {
+            ifindex = ifindex->next;
+            continue;
+        }
+
+        if (ifindex->ifindex == record->out_ifindex) {
+            return 1;
+        }
+
+        ifindex = ifindex->next;
+    }
+
     return 0;
 }
 
 int cond_src(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements** */) {
     const apermon_config_prefix_list_elements *l = *(apermon_config_prefix_list_elements **) arg;
-    const apermon_prefix *p;
 
-    while (l != NULL) {
-        p = l->prefix;
-        if (p->af != record->flow_af) {
-            l = l->next;
-            continue;
-        }
+    if (record->flow_af == SFLOW_AF_INET) {
+        return apermon_prefix_list_match_inet(l, record->src_inet);
+    } else if (record->flow_af == SFLOW_AF_INET6) {
+        return apermon_prefix_list_match_inet6(l, record->src_inet6);
+    } 
 
-        if (p->af == SFLOW_AF_INET) {
-            if (p->inet == record->src_inet) {
-                return 1;
-            }
-        } else if (p->af == SFLOW_AF_INET6) {
-            if (memcmp(p->inet6, record->src_inet6, sizeof(p->inet6)) == 0) {
-                return 1;
-            }
-        } else {
-            log_warn("internal error: unknown af %u.\n", p->af);
-        }
-
-        l = l->next;
-    }
+    log_error("unknown flow address family %d.\n", record->flow_af);
 
     return 0;
 }
 
 int cond_dst(const apermon_flow_record* record, const void* arg /* apermon_config_prefix_list_elements** */) {
     const apermon_config_prefix_list_elements *l = *(apermon_config_prefix_list_elements **) arg;
-    const apermon_prefix *p;
 
-    while (l != NULL) {
-        p = l->prefix;
-        if (p->af != record->flow_af) {
-            l = l->next;
-            continue;
-        }
+    if (record->flow_af == SFLOW_AF_INET) {
+        return apermon_prefix_list_match_inet(l, record->dst_inet);
+    } else if (record->flow_af == SFLOW_AF_INET6) {
+        return apermon_prefix_list_match_inet6(l, record->dst_inet6);
+    } 
 
-        if (p->af == SFLOW_AF_INET) {
-            if (p->inet == record->dst_inet) {
-                return 1;
-            }
-        } else if (p->af == SFLOW_AF_INET6) {
-            if (memcmp(p->inet6, record->dst_inet6, sizeof(p->inet6)) == 0) {
-                return 1;
-            }
-        } else {
-            log_warn("internal error: unknown af %u.\n", p->af);
-        }
-
-        l = l->next;
-    }
+    log_error("unknown flow address family %d.\n", record->flow_af);
 
     return 0;
 }
