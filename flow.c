@@ -176,7 +176,7 @@ int aggergrate_flows(apermon_context *ctx) {
     }
 
     if (ret < 0) {
-        log_error("internal error: failed to aggergrate_flows (trigger: %s).\n", ctx->trigger_config->name);
+        log_error("internal error: aggergrate_flows failed (trigger: %s).\n", ctx->trigger_config->name);
     }
 
     return ret;
