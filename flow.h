@@ -5,7 +5,8 @@
 #include "time.h"
 
 #define MAX_RECORDS_PER_FLOW 1024
-#define RUNNING_AVERAGE_SIZE 10
+#define RUNNING_AVERAGE_SIZE 30
+#define FLOW_DUMP_BACKTRACK 10
 
 typedef struct _apermon_context apermon_context;
 typedef struct _apermon_aggregated_flow apermon_aggregated_flow;
@@ -47,6 +48,6 @@ void free_agent_data(apermon_aggregated_agent_data *data);
 uint64_t running_average_bps(const apermon_aggregated_flow *af);
 uint64_t running_average_pps(const apermon_aggregated_flow *af);
 
-void dump_flows(const apermon_context *ctx);
+void dump_flows(const apermon_context *ctx, int only_dirty);
 
 #endif // APERMON_FLOW_H

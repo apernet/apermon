@@ -36,7 +36,7 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
 
     aggr = ctx->aggr_hash->head;
 
-    dump_flows(ctx);
+    dump_flows(ctx, 1);
 
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;

@@ -258,7 +258,7 @@ uint64_t running_average_pps(const apermon_aggregated_flow *af) {
     return sum / data_count;
 }
 
-void dump_flows(const apermon_context *ctx) {
+void dump_flows(const apermon_context *ctx, int only_dirty) {
     apermon_hash_item *aggr = ctx->aggr_hash->head;
     apermon_aggregated_flow *af;
 
@@ -267,13 +267,18 @@ void dump_flows(const apermon_context *ctx) {
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
 
+        if (ctx->now - af->last_modified > FLOW_DUMP_BACKTRACK || (only_dirty && !af->dirty)) {
+            aggr = aggr->iter_next;
+            continue;
+        }
+
         if (af->flow_af == SFLOW_AF_INET) {
             inet_ntop(AF_INET, &af->inet, addr, sizeof(addr));
         } else {
             inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
         }
 
-        log_debug("trigger %s, agent %s - %s: %lu bps, %lu pps\n",
+        log_debug("instance %s, submmited by %s for %s: %lu bps, %lu pps\n",
             ctx->trigger_config->name, ctx->current_flows->agent_name, addr,
             running_average_bps(af), running_average_pps(af)
         );
