@@ -112,8 +112,8 @@ int start_servers() {
     while (_running) {
         ret = epoll_wait(efd, _eavil, MAX_EPOLL_EVENTS, 1000);
 
-        if (errno == EINTR && !_running) {
-            break;
+        if (errno == EINTR) {
+            continue;
         }
 
         if (ret < 0) {
