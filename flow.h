@@ -2,6 +2,7 @@
 #define APERMON_FLOW_H
 #include <stdint.h>
 #include "hash.h"
+#include "time.h"
 
 #define MAX_RECORDS_PER_FLOW 1024
 #define RUNNING_AVERAGE_SIZE 10
@@ -29,6 +30,8 @@ typedef struct _apermon_aggregated_flow {
         uint32_t inet;
         uint8_t inet6[16];
     };
+
+    time_t last_modified;
 
     apermon_hash *agent_data; /* maps agent inet/inet6 to apermon_aggregated_agent_data */
 } apermon_aggregated_flow;

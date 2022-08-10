@@ -22,7 +22,7 @@ static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, 
 
         if (af->last_uptime == now) {
             log_warn("last update is the same as now - retr / replay attack?\n");
-            continue;
+            return;
         }
 
         dt = now - af->last_uptime;
@@ -78,6 +78,7 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context
         af = new_aflow();
     }
 
+    af->last_modified = ctx->now;
     af->dirty = 1;
     af->flow_af = SFLOW_AF_INET;
     af->inet = addr;
@@ -98,7 +99,8 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_contex
         af = new_aflow();
     }
 
-    af->dirty =1;
+    af->last_modified = ctx->now;
+    af->dirty = 1;
     af->flow_af = SFLOW_AF_INET6;
     memcpy(af->inet6, addr, sizeof(af->inet6));
 

@@ -12,8 +12,13 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
 
     const apermon_flow_record *r = flows->records;
 
+    ctx->now = time(NULL);
     ctx->current_flows = flows;
     ctx->n_selected = 0;
+
+    if (ctx->now - ctx->last_gc >= CONTEXT_GC_MIN_INTERVAL) {
+        gc_context(ctx);
+    }
 
     cond_begin(ctx);
 
@@ -43,10 +48,8 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
 
         af->dirty = 0;
 
-        // todo GC: remove old aggregated flows not recently used
-
         if (config->bps > 0) {
-            bps = running_average_bps(af);
+            bps = running_average_bps(af); 
             if (bps >= config->bps) {
                 log_info("trigger: %s (bps: %lu > %lu)\n", config->name, bps, config->bps);
                 // todo
