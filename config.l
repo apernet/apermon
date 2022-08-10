@@ -44,6 +44,10 @@ addresses {
     return ADDRESSES;
 }
 
+sample-rate-cap {
+    return SAMPLE_RATE_CAP;
+}
+
 interfaces {
     return INTERFACES;
 }

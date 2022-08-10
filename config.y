@@ -51,7 +51,7 @@
 %token OPTIONS LISTEN MIN_BAN_TIME
 %token LBRACE RBRACE SEMICOLON LBRACK RBRACK
 %token SFLOW V5
-%token AGENTS ADDRESSES
+%token AGENTS ADDRESSES SAMPLE_RATE_CAP
 %token INTERFACES IFINDEXES DOT
 %token PREFIXES SLASH
 %token ACTIONS SCRIPT EVENTS BAN UNBAN
@@ -469,6 +469,9 @@ agent_options: agent_option | agent_options agent_option
 agent_option
     : ADDRESSES LBRACK agent_addresses RBRACK SEMICOLON {
         get_current_agent()->addresses = $3;
+    }
+    | SAMPLE_RATE_CAP NUMBER SEMICOLON {
+        get_current_agent()->sample_rate_cap = $2;
     }
 
 agent_addresses

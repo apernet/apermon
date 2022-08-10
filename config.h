@@ -30,6 +30,7 @@ typedef struct _apermon_config_agent_addresses {
 typedef struct _apermon_config_agents {
     char *name;
     apermon_config_agent_addresses *addresses;
+    uint32_t sample_rate_cap;
 
     struct _apermon_config_agents *next;
 } apermon_config_agents;
