@@ -6,7 +6,7 @@
 apermon_context *new_context() {
     apermon_context *ctx = (apermon_context *) malloc(sizeof(apermon_context));
     memset(ctx, 0, sizeof(apermon_context));
-    ctx->aggr_hash = new_hash();
+    ctx->aggr_hash = new_hash(20);
 
     return ctx;
 }

@@ -225,7 +225,7 @@ void end_config() {
         t = t->next;
     }
 
-    _config->agents_hash = new_hash();
+    _config->agents_hash = new_hash(4);
 
     while (a != NULL) {
         aa = a->addresses;

@@ -210,7 +210,7 @@ int aggergrate_flows(apermon_context *ctx) {
 apermon_aggregated_flow *new_aflow() {
     apermon_aggregated_flow *af = (apermon_aggregated_flow *) malloc(sizeof(apermon_aggregated_flow));
     memset(af, 0, sizeof(apermon_aggregated_flow));
-    af->agent_data = new_hash();
+    af->agent_data = new_hash(4);
 
     return af;
 }
