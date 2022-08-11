@@ -63,9 +63,8 @@ static void run_trigger_script_ban(const apermon_config_triggers *config, const 
                     envp[2] = strdup(strbuf);
 
                     inet_ntop(AF_INET, &pfx->inet, addr, sizeof(addr));
-                    inet_ntop(AF_INET, &pfx->mask, addr2, sizeof(addr2));
 
-                    snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%s", addr, addr2);
+                    snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
                     envp[3] = strdup(strbuf);
                     goto ban_end_net_and_prefix;
                 }
@@ -75,8 +74,7 @@ static void run_trigger_script_ban(const apermon_config_triggers *config, const 
                     envp[2] = strdup(strbuf);
 
                     inet_ntop(AF_INET6, pfx->inet6, addr, sizeof(addr));
-                    inet_ntop(AF_INET6, pfx->mask6, addr2, sizeof(addr2));
-                    snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%s", addr, addr2);
+                    snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
                     envp[3] = strdup(strbuf);
                     goto ban_end_net_and_prefix;
                 }
@@ -144,7 +142,7 @@ ban_end_net_and_prefix:
 static void run_trigger_script_unban(const apermon_trigger_state *ts, const apermon_config_action_scripts *script) {
     char **argv = calloc(2, sizeof(char *));
     char **envp = calloc(8, sizeof(char *));
-    char strbuf[0xffff], addr[INET6_ADDRSTRLEN + 1], addr2[INET6_ADDRSTRLEN + 1];
+    char strbuf[0xffff], addr[INET6_ADDRSTRLEN + 1];
 
     const apermon_config_prefix_lists_set *set = ts->trigger->networks;
     const apermon_config_prefix_lists *l = NULL;
@@ -190,9 +188,8 @@ static void run_trigger_script_unban(const apermon_trigger_state *ts, const aper
                     envp[2] = strdup(strbuf);
 
                     inet_ntop(AF_INET, &pfx->inet, addr, sizeof(addr));
-                    inet_ntop(AF_INET, &pfx->mask, addr2, sizeof(addr2));
 
-                    snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%s", addr, addr2);
+                    snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
                     envp[3] = strdup(strbuf);
                     goto unban_end_net_and_prefix;
                 }
@@ -202,8 +199,7 @@ static void run_trigger_script_unban(const apermon_trigger_state *ts, const aper
                     envp[2] = strdup(strbuf);
 
                     inet_ntop(AF_INET6, pfx->inet6, addr, sizeof(addr));
-                    inet_ntop(AF_INET6, pfx->mask6, addr2, sizeof(addr2));
-                    snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%s", addr, addr2);
+                    snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
                     envp[3] = strdup(strbuf);
                     goto unban_end_net_and_prefix;
                 }

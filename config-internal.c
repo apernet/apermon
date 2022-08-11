@@ -304,6 +304,7 @@ apermon_config_prefix_list_elements *new_prefix_inet(const struct in_addr *addr,
     prefix->prefix->af = SFLOW_AF_INET;
     prefix->prefix->inet = addr->s_addr;
     prefix->prefix->mask = htonl(0xffffffff << (32 - prefix_len));
+    prefix->prefix->cidr = prefix_len;
 
     return prefix;
 }
@@ -320,6 +321,7 @@ apermon_config_prefix_list_elements *new_prefix_inet6(const struct in6_addr *add
     prefix->prefix->af = SFLOW_AF_INET6;
     memcpy(&prefix->prefix->inet6, addr, sizeof(prefix->prefix->inet6));
     memcpy(&prefix->prefix->mask6, CIDR_MASK_MAP6[prefix_len], sizeof(prefix->prefix->mask6));
+    prefix->prefix->cidr = prefix_len;
 
     return prefix;
 }

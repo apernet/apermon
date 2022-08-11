@@ -167,7 +167,7 @@ Notes:
     - `TYPE=ban`: type of event. Always `ban` for `ban` event.
     - `AF=1`: address family. `1` - IPv4, `2` - IPv6.
     - `ADDR=192.0.2.1`: host/network to be banned.
-    - `PREFIX=192.0.2.0/255.255.255.0`: prefix containing the address.
+    - `PREFIX=192.0.2.0/24`: prefix containing the address.
     - `NET=my-network`: name of the network.
     - `IN_PPS=114514`: inbound pps to the host/network.
     - `OUT_PPS=1919810`: outbound pps from the host/network.
@@ -190,7 +190,7 @@ Notes:
     - `FIRST_TRIGGERED=1660166143`: timestamp of initial trigger.
     - `LAST_TRIGGERED=1660169743`: timestamp of last trigger.
     - `ADDR=192.0.2.1`: host/network to be unbanned.
-    - `PREFIX=192.0.2.0/255.255.255.0`: prefix containing the address.
+    - `PREFIX=192.0.2.0/24`: prefix containing the address.
     - `NET=my-network`: name of the network.
 
 **`triggers`** - defines triggers. i.e., when to do what. Syntax:

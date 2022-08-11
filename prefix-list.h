@@ -15,6 +15,8 @@ typedef struct _apermon_prefix {
         uint32_t mask;
         uint8_t mask6[16];
     };
+
+    uint8_t cidr;
 } apermon_prefix;
 
 int apermon_prefix_match_inet(const apermon_prefix* lst, uint32_t addr);
