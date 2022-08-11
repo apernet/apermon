@@ -11,7 +11,6 @@ static const apermon_config *_config;
 ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **output) {
     const uint8_t *ptr = packet;
     const sflow_sample_common *sample_common;
-    const sflow_sample_element_common *element_common;
 
     sflow_parsed *parsed_pkt = (sflow_parsed *) malloc(sizeof(sflow_parsed));
     sflow_parsed_samples *last_sample = parsed_pkt->samples = NULL, *parsed_sample;

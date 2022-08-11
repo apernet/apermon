@@ -304,7 +304,7 @@ void dump_flows(const apermon_context *ctx, int only_dirty) {
 
         avg = running_average(af);
 
-        log_debug("instance %s, submmited by %s for %s: %lu bps in, %lu bps out, %lu pps in, %lu pps out\n",
+        log_info("instance %s, submmited by %s for %s: %lu bps in, %lu bps out, %lu pps in, %lu pps out\n",
             ctx->trigger_config->name, ctx->current_flows->agent->name, addr,
             avg->in_bps, avg->out_bps, avg->in_pps, avg->out_pps
         );
@@ -325,7 +325,7 @@ void dump_flows(const apermon_context *ctx, int only_dirty) {
                 inet_ntop(AF_INET6, fr->dst_inet6, addr2, sizeof(addr2));
             }
 
-            log_debug("contrib flow proto %u, %s.%u -> %s.%u, %u bytes, %u pkts\n",
+            log_info("contrib flow proto %u, %s.%u -> %s.%u, %u bytes, %u pkts\n",
                 fr->l3_proto, addr, fr->src_port, addr2, fr->dst_port, fr->frame_length * fr->rate, fr->rate
             );
         }
