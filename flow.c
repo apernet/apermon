@@ -302,9 +302,8 @@ void dump_flows(FILE *to, const apermon_context *ctx, int only_dirty) {
 
         avg = running_average(af);
 
-        fprintf(to, "%s,%s,%s,%lu,%lu,%lu,%lu\n",
-            ctx->trigger_config->name, ctx->current_flows->agent->name, addr,
-            avg->in_bps, avg->out_bps, avg->in_pps, avg->out_pps
+        fprintf(to, "%s,%s,%lu,%lu,%lu,%lu\n",
+            ctx->trigger_config->name, addr, avg->in_bps, avg->out_bps, avg->in_pps, avg->out_pps
         );
 
         aggr = aggr->iter_next;
