@@ -57,6 +57,6 @@ void free_agent_data(apermon_aggregated_agent_data *data);
 
 const apermon_aggregated_flow_average* running_average(const apermon_aggregated_flow *af); // not thread safe - uses local struct
 
-void dump_flows(const apermon_context *ctx, int only_dirty);
+void dump_flows(FILE *to, const apermon_context *ctx, int only_dirty);
 
 #endif // APERMON_FLOW_H

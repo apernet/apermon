@@ -11,6 +11,7 @@
 #include "prefix-list.h"
 
 static const apermon_config *_config;
+static time_t _last_status_dump;
 
 static void run_trigger_script_ban(const apermon_config_triggers *config, const apermon_config_action_scripts *script, const apermon_aggregated_flow *flow, const apermon_aggregated_flow_average *metrics) {
     char **argv = calloc(2, sizeof(char *));
@@ -365,8 +366,32 @@ static void unban_scan(apermon_context *ctx) {
     }
 }
 
+static void status_dump() {
+    FILE *fp = fopen(_config->status_file, "w");
+    apermon_config_triggers *t = _config->triggers;
+    int ret;
+
+    if (fp == NULL) {
+        log_error("fopen(): %s\n", strerror(errno));
+        return;
+    }
+
+    fprintf(fp, "trigger,agent,addr,in_bps,out_bps,in_pps,out_pps\n");
+
+    while (t != NULL) {
+        dump_flows(fp, t->ctx, 0);
+        t = t->next;
+    }
+
+    ret = fclose(fp);
+    if (ret < 0) {
+        log_error("fclose(): %s\n", strerror(errno));
+    }
+}
+
 void init_triggers(const apermon_config *config) {
     _config = config;
+    _last_status_dump = time(NULL);
 }
 
 void triggers_timed_callback() {
@@ -388,6 +413,11 @@ void triggers_timed_callback() {
         }
 
         t = t->next;
+    }
+
+    if (now - _last_status_dump >= _config->status_dump_interval) {
+        _last_status_dump = now;
+        status_dump();
     }
 }
 

@@ -279,14 +279,12 @@ const apermon_aggregated_flow_average *running_average(const apermon_aggregated_
     return &_running_average;
 }
 
-void dump_flows(const apermon_context *ctx, int only_dirty) {
+void dump_flows(FILE *to, const apermon_context *ctx, int only_dirty) {
     apermon_hash_item *aggr = ctx->aggr_hash->head;
     apermon_aggregated_flow *af;
-    apermon_flow_record *fr;
-    size_t i;
     const apermon_aggregated_flow_average *avg;
 
-    char addr[INET6_ADDRSTRLEN + 1], addr2[INET6_ADDRSTRLEN + 1];
+    char addr[INET6_ADDRSTRLEN + 1];
 
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
@@ -304,31 +302,10 @@ void dump_flows(const apermon_context *ctx, int only_dirty) {
 
         avg = running_average(af);
 
-        log_info("instance %s, submmited by %s for %s: %lu bps in, %lu bps out, %lu pps in, %lu pps out\n",
+        fprintf(to, "%s,%s,%s,%lu,%lu,%lu,%lu\n",
             ctx->trigger_config->name, ctx->current_flows->agent->name, addr,
             avg->in_bps, avg->out_bps, avg->in_pps, avg->out_pps
         );
-
-        for (i = 0; i < CONTRIB_TRACK_SIZE; ++i) {
-            fr = &af->contrib_flows[i];
-
-            if (fr->flow_af == SFLOW_AF_UNDEFINED) {
-                // likely contrib_flows list does not have CONTRIB_TRACK_SIZE elements yet
-                break;
-            }
-
-            if (fr->flow_af == SFLOW_AF_INET) {
-                inet_ntop(AF_INET, &fr->src_inet, addr, sizeof(addr));
-                inet_ntop(AF_INET, &fr->dst_inet, addr2, sizeof(addr2));
-            } else {
-                inet_ntop(AF_INET6, fr->src_inet6, addr, sizeof(addr));
-                inet_ntop(AF_INET6, fr->dst_inet6, addr2, sizeof(addr2));
-            }
-
-            log_info("contrib flow proto %u, %s.%u -> %s.%u, %u bytes, %u pkts\n",
-                fr->l3_proto, addr, fr->src_port, addr2, fr->dst_port, fr->frame_length * fr->rate, fr->rate
-            );
-        }
 
         aggr = aggr->iter_next;
     }
