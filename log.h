@@ -1,7 +1,11 @@
 #ifndef APERMON_LOG_H
-#define APERMON_LOG_H
+#define APERMON_LOG_H 
 #include <stdio.h>
+#ifdef APERMON_DEBUG
 #define log_debug(fmt, ...) log("DEBUG", fmt, ## __VA_ARGS__)
+#else
+#define log_debug(fmt, ...)
+#endif
 #define log_info(fmt, ...) log("INFO ", fmt, ## __VA_ARGS__)
 #define log_notice(fmt, ...) log("NOTE ", fmt, ## __VA_ARGS__)
 #define log_warn(fmt, ...) log("WARN ", fmt, ## __VA_ARGS__)
