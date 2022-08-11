@@ -90,6 +90,7 @@ Let's break it down:
 options {
     listen <host> <port> <protocol> <protocol-args>;
     min-ban-time <time-in-second>;
+    status-file "<file-path>" dump-interval <time-in-second>;
 }
 ```
 
@@ -98,6 +99,7 @@ Notes:
 - You may have more than one `listen`s.
 - Currently, the only supported protocol is `sflow`, and the only sflow arg is `v5`, which specifies sFlow version 5.
 - `min-ban-time` sets how long a host or network should be kept "banned" after it stops triggering thresholds. 
+- `status-file` dumps bps/pps of each host/net of each trigger to given file every `<time-in-second>` seconds.
 
 **`agents`** - defines agent(s) to listen samples from. Syntax:
 

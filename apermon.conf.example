@@ -3,6 +3,8 @@ options {
     listen 0.0.0.0 6343 sflow v5;   # listen for sflow v5 on 0.0.0.0:6343
     listen 0.0.0.0 9001 sflow v5;   # you can listen multiple ports
     min-ban-time 300;               # default min ban time for host/net
+    # dump bps/pps of each host/net of each trigger to file
+    status-file "/opt/apermon.status" dump-interval 5;
 }
 # define agnets to accept sflow packets from
 agents {
