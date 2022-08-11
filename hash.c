@@ -141,6 +141,10 @@ apermon_hash_item *hash_erase(apermon_hash *tbl, apermon_hash_item *item, const 
         tbl->head = inext;
     }
 
+    if (tbl->tail == item) {
+        tbl->tail = iprev;
+    } 
+
     if (tbl->items[item->hashed_key] == item) {
         tbl->items[item->hashed_key] = next;
     }
