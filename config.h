@@ -128,6 +128,9 @@ typedef struct _apermon_config {
     apermon_hash *agents_hash; /* maps agent inet/inet6 -> agent struct */
 
     uint32_t min_ban_time;
+
+    char *status_file;
+    uint32_t status_dump_interval;
 } apermon_config;
 
 int parse_config(const char *filename, apermon_config **config);

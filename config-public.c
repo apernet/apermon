@@ -42,6 +42,10 @@ void free_config(apermon_config *config) {
     apermon_config_action_scripts *as = NULL, *prev_as = NULL;
     apermon_config_triggers *t = config->triggers, *prev_t = NULL;
     apermon_config_prefix_lists_set *ps = NULL, *prev_ps = NULL;
+
+    if (config->status_file) {
+        free(config->status_file);
+    }
     
     while (l != NULL) {
         if (prev_l != NULL) {

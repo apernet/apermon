@@ -36,6 +36,14 @@ min-ban-time {
     return MIN_BAN_TIME;
 }
 
+status-file {
+    return STATUS_FILE;
+}
+
+dump-interval {
+    return DUMP_INTERVAL;
+}
+
 agents {
     return AGENTS;
 }

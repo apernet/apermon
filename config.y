@@ -48,7 +48,7 @@
     apermon_cond_func_list *cond_func_list_element;
 }
 
-%token OPTIONS LISTEN MIN_BAN_TIME
+%token OPTIONS LISTEN MIN_BAN_TIME STATUS_FILE DUMP_INTERVAL
 %token LBRACE RBRACE SEMICOLON LBRACK RBRACK
 %token SFLOW V5
 %token AGENTS ADDRESSES SAMPLE_RATE_CAP
@@ -502,6 +502,11 @@ option_items
     }
     | MIN_BAN_TIME NUMBER SEMICOLON {
         get_config()->min_ban_time = $2;
+    }
+    | STATUS_FILE QUOTED_STRING DUMP_INTERVAL NUMBER SEMICOLON {
+        get_config()->status_file = strdup($2);
+        get_config()->dump_interval = $4;
+        free($2);
     }
 
 option_item_listens
