@@ -505,7 +505,7 @@ option_items
     }
     | STATUS_FILE QUOTED_STRING DUMP_INTERVAL NUMBER SEMICOLON {
         get_config()->status_file = strdup($2);
-        get_config()->dump_interval = $4;
+        get_config()->status_dump_interval = $4;
         free($2);
     }
 
