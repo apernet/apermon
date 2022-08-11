@@ -1,7 +1,10 @@
 apermon
 ---
 
-`apermon` is still WIP.
+`apermon` is still WIP. Todos:
+
+- `net` type aggregator for triggers.
+- Foolproof configuration validation.
 
 `apermon` is a sflow monitoring program. It can be used for various purposes - but its main goal is to allow setting some rules to filter traffics and triggers some external scripts when the set thresholds are reached.
 
