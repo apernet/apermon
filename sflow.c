@@ -10,9 +10,12 @@ static const apermon_config *_config;
 
 ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **output) {
     const uint8_t *ptr = packet;
+    const sflow_sample_common *sample_common;
+    const sflow_sample_element_common *element_common;
 
     sflow_parsed *parsed_pkt = (sflow_parsed *) malloc(sizeof(sflow_parsed));
-    sflow_parsed_samples *last_sample = parsed_pkt->samples = NULL;
+    sflow_parsed_samples *last_sample = parsed_pkt->samples = NULL, *parsed_sample;
+    sflow_parsed_elements *last_element, *parsed_element;
 
     uint32_t n_samples, n_elements, i, j, offset, ver, agent_af, sample_len, element_len;
 
@@ -54,8 +57,15 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
 
     // parse sample
     for (i = 0; i < n_samples; ++i) {
-        sflow_parsed_samples *parsed_sample = (sflow_parsed_samples *) malloc(sizeof(sflow_parsed_samples));
-        sflow_parsed_elements *last_element = parsed_sample->elements = NULL;
+        sample_common = (const sflow_sample_common *) ptr;
+
+        if (htonl(sample_common->tag) != SFLOW_SAMPLETYPE_SAMPLE) {
+            log_debug("ignored sample with unsupported tag 0x%x\n", htonl(sample_common->tag));
+            goto parse_err;
+        }
+
+        parsed_sample = (sflow_parsed_samples *) malloc(sizeof(sflow_parsed_samples));
+        last_element = parsed_sample->elements = NULL;
         parsed_sample->next = NULL;
 
         if (last_sample == NULL) {
@@ -91,7 +101,7 @@ ssize_t parse_sflow(const uint8_t *packet, size_t packet_len, sflow_parsed **out
         ptr += sizeof(sflow_sample);
 
         for (j = 0, offset = 0; j < n_elements; ++j) {
-            sflow_parsed_elements *parsed_element = (sflow_parsed_elements *) malloc(sizeof(sflow_parsed_elements));
+            parsed_element = (sflow_parsed_elements *) malloc(sizeof(sflow_parsed_elements));
             parsed_element->next = NULL;
 
             if (last_element == NULL) {

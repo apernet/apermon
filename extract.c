@@ -138,7 +138,7 @@ int extract_flows(const sflow_parsed *parsed, apermon_flows **flows) {
     while (sample != NULL) {
         const sflow_parsed_elements *element = sample->elements;
         while (element != NULL) {
-            if (ntohl(element->common_element_hdr->format) == SFLOW_SAMPLETYPE_HDR) {
+            if (ntohl(element->common_element_hdr->format) == SFLOW_SAMPLE_FORMAT_RAW && ntohl(element->hdr_element->proto) == SFLOW_PROTO_ETHER) {
                 ret = parse_hdr(element->hdr_element, &record);
                 
                 if (ret < 0) {

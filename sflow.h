@@ -14,13 +14,17 @@ enum sflow_sample_proto {
     SFLOW_PROTO_ETHER = 1,
 };
 
+enum sflow_sample_format {
+    SFLOW_SAMPLE_FORMAT_RAW = 1,
+};
+
 typedef struct _sflow_sample_element_common {
-    net_uint32_t format;
+    net_uint32_t format; /* enum sflow_sample_format */
     net_uint32_t len;
 } sflow_sample_element_common;
 
 typedef struct _sflow_sample_element_hdr {
-    net_uint32_t format;
+    net_uint32_t format; /* enum sflow_sample_format */
     net_uint32_t len;
     net_uint32_t proto; /* enum sflow_sample_proto */
     net_uint32_t orig_frame_len;
@@ -30,8 +34,13 @@ typedef struct _sflow_sample_element_hdr {
 } sflow_sample_element_hdr;
 
 enum sflow_sampletype {
-    SFLOW_SAMPLETYPE_HDR = 1,
+    SFLOW_SAMPLETYPE_SAMPLE = 1,
 };
+
+typedef struct _sflow_sample_common {
+    net_uint32_t tag; /* enum sflow_sampletype */
+    net_uint32_t len;
+} sflow_sample_common;
 
 typedef struct _sflow_sample {
     net_uint32_t tag; /* enum sflow_sampletype */
