@@ -29,7 +29,7 @@ void free_context(apermon_context *ctx) {
 }
 
 void gc_context(apermon_context *ctx) {
-    ctx->last_gc = ctx->now;
+    ctx->last_gc = ctx->now.tv_sec;
     apermon_hash_item *aggr;
     apermon_aggregated_flow *af;
 
@@ -38,11 +38,7 @@ void gc_context(apermon_context *ctx) {
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
         
-        if (ctx->now - af->last_modified > CONTEXT_GC_STALE_TIME) {
-            if (af->dirty) {
-                log_warn("flow staled but still dirty - something has gone wrong.\n");
-            }
-
+        if (ctx->now.tv_sec - af->last_modified > CONTEXT_GC_STALE_TIME) {
             aggr = hash_erase(ctx->aggr_hash, aggr, free_aflow);
         } else {
             aggr = aggr->next;

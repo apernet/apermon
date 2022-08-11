@@ -8,88 +8,34 @@
 
 static apermon_aggregated_flow_average _running_average;
 
-static void finalize_aggergration(apermon_aggregated_agent_data **as, size_t n, uint32_t now) {
-    size_t i;
-    uint32_t dt;
-    apermon_aggregated_agent_data *af;
+static void finalize_aggergration(apermon_context *ctx) {
+    apermon_hash_item *aggr = ctx->aggr_hash->head;
+    apermon_aggregated_flow *af;
 
-    for (i = 0; i < n; ++i) {
-        af = as[i];
-        af->in_bps[af->running_average_index] = 0;
-        af->in_pps[af->running_average_index] = 0;
-        af->out_bps[af->running_average_index] = 0;
-        af->out_pps[af->running_average_index] = 0;
+    time_t dt = (ctx->now.tv_sec - ctx->last_aggregate.tv_sec) * 1000000 + (ctx->now.tv_usec - ctx->last_aggregate.tv_usec); // us
+
+    while (aggr != NULL) {
+        af = (apermon_aggregated_flow *) aggr->value;
+
+        af->in_pps -= (af->in_pps / RUNNING_AVERAGE_SIZE);
+        af->out_pps -= (af->out_pps / RUNNING_AVERAGE_SIZE);
+        af->in_bps -= (af->in_bps / RUNNING_AVERAGE_SIZE);
+        af->out_bps -= (af->out_bps / RUNNING_AVERAGE_SIZE);
+
+        af->in_pps += af->current_in_pkts * 1000000 / dt / RUNNING_AVERAGE_SIZE;
+        af->in_bps += af->current_in_bytes * 8 * 1000000 / dt / RUNNING_AVERAGE_SIZE;
+        af->out_pps += af->current_out_pkts * 1000000 / dt / RUNNING_AVERAGE_SIZE;
+        af->out_bps += af->current_out_bytes * 8 * 1000000 / dt / RUNNING_AVERAGE_SIZE;
+
+        af->current_in_pkts = af->current_out_bytes = 0;
+        af->current_in_bytes = af->current_out_bytes = 0;
+
+        af->running_average_index = (af->running_average_index + 1) % RUNNING_AVERAGE_SIZE;
+
+        aggr = aggr->next;
     }
 
-    for (i = 0; i < n; ++i) {
-        af = as[i];
-
-        // uptime reseted - clear counter to re-calc
-        if (af->last_uptime > now) {
-            af->last_uptime = now;
-            continue;
-        }
-
-        if (af->last_uptime == now) {
-            log_debug("last update is the same as now - retr / replay attack?\n");
-            return;
-        }
-
-        dt = now - af->last_uptime;
-        af->in_pps[af->running_average_index] += af->current_in_pkts * 1000 / dt;
-        af->in_bps[af->running_average_index] += af->current_in_bytes * 8 * 1000 / dt;
-        af->out_pps[af->running_average_index] += af->current_out_pkts * 1000 / dt;
-        af->out_bps[af->running_average_index] += af->current_out_bytes * 8 * 1000 / dt;
-
-        af->current_in_pkts = 0;
-        af->current_in_bytes = 0;
-        af->current_out_pkts = 0;
-        af->current_out_bytes = 0;
-    }
-
-    for (i = 0; i < n; ++i) {
-        if (af->last_uptime != now) {
-            af->last_uptime = now;
-            af->running_average_index = (af->running_average_index + 1) % RUNNING_AVERAGE_SIZE;
-        }
-    }
-}
-
-static apermon_aggregated_agent_data *aggergrate_update_agent_data(const apermon_flows *flows, apermon_hash *agent_hash, uint64_t current_bytes, uint64_t current_pkts, uint8_t dir) {
-    apermon_aggregated_agent_data *ad, *oldval = NULL;
-
-    if (flows->agent_af == SFLOW_AF_INET) {
-        ad = hash32_find(agent_hash, &flows->agent_inet);
-    } else if (flows->agent_af == SFLOW_AF_INET) {
-        ad = hash128_find(agent_hash, flows->agent_inet6);
-    } else {
-        log_error("bad agent af %d\n", flows->agent_af);
-        return NULL;
-    }
-
-    if (ad == NULL) {
-        ad = new_agent_data();
-    }
-
-    if (dir == FLOW_INGRESS) {
-        ad->current_in_bytes += current_bytes;
-        ad->current_in_pkts += current_pkts;
-    } else {
-        ad->current_out_bytes += current_bytes;
-        ad->current_out_pkts += current_pkts;
-    }
-
-    if (flows->agent_af == SFLOW_AF_INET) {
-        hash32_add_or_update(agent_hash, &flows->agent_inet, ad, (void **) &oldval);
-    } else if (flows->agent_af == SFLOW_AF_INET) {
-        hash128_add_or_update(agent_hash, flows->agent_inet6, ad, (void **) &oldval);
-    } 
-
-    if (oldval != ad && oldval != NULL) {
-        log_warn("internal error: apermon_aggregated_agent_data struct replaced in hash\n");
-    }
-
-    return ad;
+    ctx->last_aggregate = ctx->now;
 }
 
 static void add_contrib_flow(apermon_aggregated_flow *af, const apermon_flow_record *flow) {
@@ -97,7 +43,7 @@ static void add_contrib_flow(apermon_aggregated_flow *af, const apermon_flow_rec
     af->contrib_flows_index = (af->contrib_flows_index + 1) % CONTRIB_TRACK_SIZE;
 }
 
-static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context *ctx, uint32_t addr, const apermon_flow_record *flow, uint8_t dir) {
+static apermon_aggregated_flow *aggergrate_flows_host_inet(apermon_context *ctx, uint32_t addr, const apermon_flow_record *flow, uint8_t dir) {
     apermon_aggregated_flow *af = hash32_find(ctx->aggr_hash, &addr), *oldval = NULL;
     uint32_t rate = flow->rate, cap = ctx->current_flows->agent->sample_rate_cap;
 
@@ -109,10 +55,17 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context
         af = new_aflow();
     }
 
-    af->last_modified = ctx->now;
-    af->dirty = 1;
+    af->last_modified = ctx->now.tv_sec;
     af->flow_af = SFLOW_AF_INET;
     af->inet = addr;
+
+    if (dir == FLOW_INGRESS) {
+        af->current_in_bytes += flow->frame_length * rate;
+        af->current_in_pkts += rate;
+    } else {
+        af->current_out_bytes += flow->frame_length * rate;
+        af->current_out_pkts += rate;
+    }
 
     hash32_add_or_update(ctx->aggr_hash, &addr, af, (void **) &oldval);
 
@@ -121,10 +74,10 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet(apermon_context
     }
 
     add_contrib_flow(af, flow);
-    return aggergrate_update_agent_data(ctx->current_flows, af->agent_data, flow->frame_length * rate, rate, dir);
+    return af;
 }
 
-static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_context *ctx, const uint8_t *addr, const apermon_flow_record *flow, uint8_t dir) {
+static apermon_aggregated_flow *aggergrate_flows_host_inet6(apermon_context *ctx, const uint8_t *addr, const apermon_flow_record *flow, uint8_t dir) {
     apermon_aggregated_flow *af = hash128_find(ctx->aggr_hash, addr), *oldval = NULL;
     uint32_t rate = flow->rate, cap = ctx->current_flows->agent->sample_rate_cap;
 
@@ -136,10 +89,16 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_contex
         af = new_aflow();
     }
 
-    af->last_modified = ctx->now;
-    af->dirty = 1;
+    af->last_modified = ctx->now.tv_sec;
     af->flow_af = SFLOW_AF_INET6;
     memcpy(af->inet6, addr, sizeof(af->inet6));
+    if (dir == FLOW_INGRESS) {
+        af->current_in_bytes += flow->frame_length * rate;
+        af->current_in_pkts += rate;
+    } else {
+        af->current_out_bytes += flow->frame_length * rate;
+        af->current_out_pkts += rate;
+    }
 
     hash128_add_or_update(ctx->aggr_hash, addr, af, (void **) &oldval);
 
@@ -148,17 +107,14 @@ static apermon_aggregated_agent_data *aggergrate_flows_host_inet6(apermon_contex
     }
 
     add_contrib_flow(af, flow);
-    return aggergrate_update_agent_data(ctx->current_flows, af->agent_data, flow->frame_length * rate, rate, dir);
+    return af;
 }
 
 static int aggergrate_flows_host(apermon_context *ctx) {
     const apermon_config_triggers *t = ctx->trigger_config;
     const apermon_flow_record *flow;
-    size_t n_modified = 0, i;
+    size_t i;
     uint8_t dir;
-    uint32_t now = ctx->current_flows->uptime; // unit: ms
-
-    apermon_aggregated_agent_data *modifed_flows[MAX_RECORDS_PER_FLOW];
 
     for (i = 0; i < ctx->n_selected; ++i) {
         flow = ctx->selected_flows[i];
@@ -166,29 +122,24 @@ static int aggergrate_flows_host(apermon_context *ctx) {
 
         if (t->flags & APERMON_TRIGGER_CHECK_INGRESS && dir == FLOW_INGRESS) {
             if (flow->flow_af == SFLOW_AF_INET) {
-                modifed_flows[n_modified++] = aggergrate_flows_host_inet(ctx, flow->dst_inet, flow, dir);
+                aggergrate_flows_host_inet(ctx, flow->dst_inet, flow, dir);
             } else if (flow->flow_af == SFLOW_AF_INET6) {
-                modifed_flows[n_modified++] = aggergrate_flows_host_inet6(ctx, flow->dst_inet6, flow, dir);
+                aggergrate_flows_host_inet6(ctx, flow->dst_inet6, flow, dir);
             } else {
                 log_error("internal error: bad af.\n");
             }
         } else if (t->flags & APERMON_TRIGGER_CHECK_EGRESS && dir == FLOW_EGRESS) {
             if (flow->flow_af == SFLOW_AF_INET) {
-                modifed_flows[n_modified++] = aggergrate_flows_host_inet(ctx, flow->src_inet, flow, dir);
+                aggergrate_flows_host_inet(ctx, flow->src_inet, flow, dir);
             } else if (flow->flow_af == SFLOW_AF_INET6) {
-                modifed_flows[n_modified++] = aggergrate_flows_host_inet6(ctx, flow->src_inet6, flow, dir);
+                aggergrate_flows_host_inet6(ctx, flow->src_inet6, flow, dir);
             } else {
                 log_error("internal error: bad af.\n");
             }
         }
-
-        if (n_modified >= MAX_RECORDS_PER_FLOW) {
-            log_warn("too many records to aggergrate in one sample - max %d allowed. rests will be ignored.\n", MAX_RECORDS_PER_FLOW);
-            break;
-        }
     }
 
-    finalize_aggergration(modifed_flows, n_modified, now);
+    finalize_aggergration(ctx);
 
     return 0;
 }
@@ -220,7 +171,6 @@ int aggergrate_flows(apermon_context *ctx) {
 apermon_aggregated_flow *new_aflow() {
     apermon_aggregated_flow *af = (apermon_aggregated_flow *) malloc(sizeof(apermon_aggregated_flow));
     memset(af, 0, sizeof(apermon_aggregated_flow));
-    af->agent_data = new_hash(4);
 
     return af;
 }
@@ -231,55 +181,21 @@ void free_aflow(void *f) {
         return;
     }
 
-    free_hash(flow->agent_data, free);
     free(flow);
 }
 
-apermon_aggregated_agent_data *new_agent_data() {
-    apermon_aggregated_agent_data *ad = (apermon_aggregated_agent_data *) malloc(sizeof(apermon_aggregated_agent_data));
-    memset(ad, 0, sizeof(apermon_aggregated_agent_data));
-
-    return ad;
-}
-
-void free_agent_data(apermon_aggregated_agent_data *data) {
-    if (data == NULL) {
-        return;
-    }
-
-    free(data);
-}
-
 const apermon_aggregated_flow_average *running_average(const apermon_aggregated_flow *af) {
-    size_t i = 0, data_count = 0;
-    const apermon_hash_item *a = af->agent_data->head;
-    const apermon_aggregated_agent_data *ad;
+    size_t i = 0;
 
-    _running_average.in_bps = _running_average.out_bps = 0;
-    _running_average.in_pps = _running_average.out_pps = 0;
-
-    while (a != NULL) {
-        ad = (const apermon_aggregated_agent_data *) a->value;
-        for (i = 0; i < RUNNING_AVERAGE_SIZE; ++i) {
-            _running_average.in_bps += ad->in_bps[i];
-            _running_average.out_bps += ad->out_bps[i];
-            _running_average.in_pps += ad->in_pps[i];
-            _running_average.out_pps += ad->out_pps[i];
-        }
-
-        data_count += RUNNING_AVERAGE_SIZE;
-        a = a->next;
-    }
-
-    _running_average.in_bps /= data_count;
-    _running_average.out_bps /= data_count;
-    _running_average.in_pps /= data_count;
-    _running_average.out_pps /= data_count;
+    _running_average.in_bps = af->in_bps;
+    _running_average.out_bps = af->out_bps;
+    _running_average.in_pps = af->in_pps;
+    _running_average.out_pps = af->out_pps;
 
     return &_running_average;
 }
 
-void dump_flows(FILE *to, const apermon_context *ctx, int only_dirty) {
+void dump_flows(FILE *to, const apermon_context *ctx) {
     apermon_hash_item *aggr = ctx->aggr_hash->head;
     apermon_aggregated_flow *af;
     const apermon_aggregated_flow_average *avg;
@@ -289,7 +205,7 @@ void dump_flows(FILE *to, const apermon_context *ctx, int only_dirty) {
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
 
-        if (ctx->now - af->last_modified > FLOW_DUMP_BACKTRACK || (only_dirty && !af->dirty)) {
+        if (ctx->now.tv_sec - af->last_modified > FLOW_DUMP_BACKTRACK) {
             aggr = aggr->iter_next;
             continue;
         }

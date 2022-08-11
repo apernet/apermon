@@ -22,12 +22,14 @@ typedef struct _apermon_context {
     const apermon_flow_record *selected_flows[MAX_RECORDS_PER_FLOW]; /* not own by us */
     uint8_t flow_directions[MAX_RECORDS_PER_FLOW];
     size_t n_selected;
+    struct timeval now;
 
     // context (persistent) info
     apermon_hash *aggr_hash; /* hashmap: inet/inet6 to aggr, own by us */
     apermon_hash *trigger_status; /* hashmap: inet/inet6 to trigger status, owned by us */
     apermon_config_triggers *trigger_config; /* not own by us */
-    time_t now, last_gc, last_unban_scan;
+    struct timeval last_aggregate;
+    time_t last_gc, last_unban_scan;
 } apermon_context;
 
 apermon_context *new_context();

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
 #include "trigger.h"
 #include "context.h"
 #include "log.h"
@@ -288,12 +289,12 @@ static void fire_trigger(const apermon_config_triggers *config, const apermon_ag
     if (ts == NULL) {
         ts = (apermon_trigger_state *) malloc(sizeof(apermon_trigger_state));
         memset(ts, 0, sizeof(apermon_trigger_state));
-        ts->first_triggered = ctx->now;
+        ts->first_triggered = ctx->now.tv_sec;
     }
 
     ts->trigger = config;
     ts->af = flow->flow_af;
-    ts->last_triggered = ctx->now;
+    ts->last_triggered = ctx->now.tv_sec;
 
     if (flow->flow_af == SFLOW_AF_INET) {
         ts->inet = flow->inet;
@@ -353,7 +354,7 @@ static void unban_scan(apermon_context *ctx) {
 
     while (item != NULL) {
         ts = (apermon_trigger_state *) item->value;
-        if (ctx->now - ts->last_triggered > ctx->trigger_config->min_ban_time) {
+        if (ctx->now.tv_sec - ts->last_triggered > ctx->trigger_config->min_ban_time) {
             unfire_trigger(ts);
             item = hash_erase(ctx->trigger_status, item, free);
         } else {
@@ -375,7 +376,7 @@ static void status_dump() {
     fprintf(fp, "trigger,addr,in_bps,out_bps,in_pps,out_pps\n");
 
     while (t != NULL) {
-        dump_flows(fp, t->ctx, 0);
+        dump_flows(fp, t->ctx);
         t = t->next;
     }
 
@@ -393,26 +394,27 @@ void init_triggers(const apermon_config *config) {
 void triggers_timed_callback() {
     apermon_config_triggers *t = _config->triggers;
     apermon_context *ctx;
-    time_t now = time(NULL);
+    struct timeval now;
+    gettimeofday(&now, NULL);
 
     while (t != NULL) {
         ctx = t->ctx;
         ctx->now = now;
 
-        if (ctx->now - ctx->last_gc >= CONTEXT_GC_MIN_INTERVAL) {
+        if (ctx->now.tv_sec - ctx->last_gc >= CONTEXT_GC_MIN_INTERVAL) {
             gc_context(ctx);
         }
 
-        if (ctx->now - ctx->last_unban_scan > TRIGGER_UNBAN_SCAN_INTERVAL) {
-            ctx->last_unban_scan = ctx->now;
+        if (ctx->now.tv_sec - ctx->last_unban_scan > TRIGGER_UNBAN_SCAN_INTERVAL) {
+            ctx->last_unban_scan = ctx->now.tv_sec;
             unban_scan(ctx);
         }
 
         t = t->next;
     }
 
-    if (now - _last_status_dump >= _config->status_dump_interval) {
-        _last_status_dump = now;
+    if (now.tv_sec - _last_status_dump >= _config->status_dump_interval) {
+        _last_status_dump = now.tv_sec;
         status_dump();
     }
 }
@@ -448,12 +450,6 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
 
-        if (!af->dirty) {
-            aggr = aggr->iter_next;
-            continue;
-        }
-
-        af->dirty = 0;
         avg = running_average(af);
         
         bps = avg->in_bps > avg->out_bps ? avg->in_bps : avg->out_bps;
