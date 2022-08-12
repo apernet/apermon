@@ -2,6 +2,7 @@
 #include <string.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
 #include "trigger.h"
 #include "context.h"
 #include "log.h"
@@ -13,7 +14,7 @@
 static const apermon_config *_config;
 static time_t _last_status_dump;
 
-static void run_trigger_script_ban(const apermon_config_triggers *config, const apermon_config_action_scripts *script, const apermon_aggregated_flow *flow, const apermon_aggregated_flow_average *metrics) {
+static void run_trigger_script_ban(const apermon_config_triggers *config, const apermon_config_action_scripts *script, const apermon_aggregated_flow *flow) {
     char **argv = calloc(2, sizeof(char *));
     char **envp = calloc(11, sizeof(char *));
     char strbuf[0xffff], addr[INET6_ADDRSTRLEN + 1], addr2[INET6_ADDRSTRLEN + 1];
@@ -87,16 +88,16 @@ static void run_trigger_script_ban(const apermon_config_triggers *config, const 
     }
 
 ban_end_net_and_prefix:
-    snprintf(strbuf, sizeof(strbuf), "IN_BPS=%lu", metrics->in_bps);
+    snprintf(strbuf, sizeof(strbuf), "IN_BPS=%lu", flow->in_bps);
     envp[4] = strdup(strbuf);
 
-    snprintf(strbuf, sizeof(strbuf), "OUT_BPS=%lu", metrics->out_bps);
+    snprintf(strbuf, sizeof(strbuf), "OUT_BPS=%lu", flow->out_bps);
     envp[5] = strdup(strbuf);
 
-    snprintf(strbuf, sizeof(strbuf), "IN_PPS=%lu", metrics->in_pps);
+    snprintf(strbuf, sizeof(strbuf), "IN_PPS=%lu", flow->in_pps);
     envp[6] = strdup(strbuf);
 
-    snprintf(strbuf, sizeof(strbuf), "OUT_PPS=%lu", metrics->out_pps);
+    snprintf(strbuf, sizeof(strbuf), "OUT_PPS=%lu", flow->out_pps);
     envp[7] = strdup(strbuf);
 
     offset += snprintf(strbuf, sizeof(strbuf), "FLOWS=af,in_ifindex,out_ifindex,src,dst,proto,sport,dport,bytes,packets\n");
@@ -270,14 +271,14 @@ static void unfire_trigger(const apermon_trigger_state *ts) {
     }
 }
 
-static void fire_trigger(const apermon_config_triggers *config, const apermon_aggregated_flow *flow, const apermon_aggregated_flow_average *metrics) {
+static void fire_trigger(const apermon_config_triggers *config, const apermon_aggregated_flow *flow) {
     apermon_trigger_state *ts = NULL, *old_ts = NULL;
     const apermon_context *ctx = config->ctx;
     const apermon_config_actions *action = config->action;
     const apermon_config_action_scripts *script = NULL;
     pid_t pid;
 
-    log_debug("trigger %s fired - in_bps %lu, out_bps %lu, in_pps %lu, out_pps %lu\n", config->name, metrics->in_bps, metrics->out_bps, metrics->in_pps, metrics->out_pps);
+    log_debug("trigger %s fired - in_bps %lu, out_bps %lu, in_pps %lu, out_pps %lu\n", config->name, flow->in_bps, flow->out_bps, flow->in_pps, flow->out_pps);
 
     if (flow->flow_af == SFLOW_AF_INET) {
         ts = hash32_find(ctx->trigger_status, &flow->inet);
@@ -288,12 +289,12 @@ static void fire_trigger(const apermon_config_triggers *config, const apermon_ag
     if (ts == NULL) {
         ts = (apermon_trigger_state *) malloc(sizeof(apermon_trigger_state));
         memset(ts, 0, sizeof(apermon_trigger_state));
-        ts->first_triggered = ctx->now;
+        ts->first_triggered = ctx->now.tv_sec;
     }
 
     ts->trigger = config;
     ts->af = flow->flow_af;
-    ts->last_triggered = ctx->now;
+    ts->last_triggered = ctx->now.tv_sec;
 
     if (flow->flow_af == SFLOW_AF_INET) {
         ts->inet = flow->inet;
@@ -338,7 +339,7 @@ static void fire_trigger(const apermon_config_triggers *config, const apermon_ag
         }
 
         if (pid == 0) {
-            run_trigger_script_ban(config, script, flow, metrics);
+            run_trigger_script_ban(config, script, flow);
             log_error("run_trigger_script_ban returned - exiting\n");
             exit(0);
         }
@@ -353,7 +354,7 @@ static void unban_scan(apermon_context *ctx) {
 
     while (item != NULL) {
         ts = (apermon_trigger_state *) item->value;
-        if (ctx->now - ts->last_triggered > ctx->trigger_config->min_ban_time) {
+        if (ctx->now.tv_sec - ts->last_triggered > ctx->trigger_config->min_ban_time) {
             unfire_trigger(ts);
             item = hash_erase(ctx->trigger_status, item, free);
         } else {
@@ -375,7 +376,7 @@ static void status_dump() {
     fprintf(fp, "trigger,addr,in_bps,out_bps,in_pps,out_pps\n");
 
     while (t != NULL) {
-        dump_flows(fp, t->ctx, 0);
+        dump_flows(fp, t->ctx);
         t = t->next;
     }
 
@@ -393,26 +394,27 @@ void init_triggers(const apermon_config *config) {
 void triggers_timed_callback() {
     apermon_config_triggers *t = _config->triggers;
     apermon_context *ctx;
-    time_t now = time(NULL);
+    struct timeval now;
+    gettimeofday(&now, NULL);
 
     while (t != NULL) {
         ctx = t->ctx;
         ctx->now = now;
 
-        if (ctx->now - ctx->last_gc >= CONTEXT_GC_MIN_INTERVAL) {
+        if (ctx->now.tv_sec - ctx->last_gc >= CONTEXT_GC_MIN_INTERVAL) {
             gc_context(ctx);
         }
 
-        if (ctx->now - ctx->last_unban_scan > TRIGGER_UNBAN_SCAN_INTERVAL) {
-            ctx->last_unban_scan = ctx->now;
+        if (ctx->now.tv_sec - ctx->last_unban_scan > TRIGGER_UNBAN_SCAN_INTERVAL) {
+            ctx->last_unban_scan = ctx->now.tv_sec;
             unban_scan(ctx);
         }
 
         t = t->next;
     }
 
-    if (now - _last_status_dump >= _config->status_dump_interval) {
-        _last_status_dump = now;
+    if (now.tv_sec - _last_status_dump >= _config->status_dump_interval) {
+        _last_status_dump = now.tv_sec;
         status_dump();
     }
 }
@@ -424,7 +426,6 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     uint64_t bps, pps;
 
     const apermon_flow_record *r = flows->records;
-    const apermon_aggregated_flow_average *avg;
 
     ctx->current_flows = flows;
     ctx->n_selected = 0;
@@ -448,24 +449,16 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
 
-        if (!af->dirty) {
-            aggr = aggr->iter_next;
-            continue;
-        }
-
-        af->dirty = 0;
-        avg = running_average(af);
-        
-        bps = avg->in_bps > avg->out_bps ? avg->in_bps : avg->out_bps;
-        pps = avg->in_pps > avg->out_pps ? avg->in_pps : avg->out_pps;
+        bps = af->in_bps > af->out_bps ? af->in_bps : af->out_bps;
+        pps = af->in_pps > af->out_pps ? af->in_pps : af->out_pps;
 
         if (config->bps > 0) {
             if (bps >= config->bps) {
-                fire_trigger(config, af, avg);
+                fire_trigger(config, af);
             }
         } else if (config->pps > 0) {
             if (pps >= config->pps) {
-                fire_trigger(config, af, avg);
+                fire_trigger(config, af);
             }
         }
 
