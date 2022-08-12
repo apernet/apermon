@@ -44,7 +44,7 @@ int apermon_prefix_list_match_inet6(const apermon_config_prefix_list_elements* l
 
     while (lst != NULL) {
         pfx = lst->prefix;
-        if (pfx->af != SFLOW_AF_INET) {
+        if (pfx->af != SFLOW_AF_INET6) {
             lst = lst->next;
             continue;
         }
