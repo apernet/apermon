@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+[ -z "$2" ] && {
+    echo "usage: $0 <status-file> <trigger-name>"
+    exit 1
+}
+
+[ -z "$STATUS_VIEW_ONCE" ] && {
+    export STATUS_VIEW_ONCE=1
+    watch -tn1 "$0" "$1" "$2"
+}
+
+records="`sed 1d "$1"`"
+t_records="`grep "^$2," <<< "$records" | sort -r -k3,4 -h -t, | awk -F, '{print $2 " " $3 / 1000000 " " $4 / 1000000 " " $5 " " $6}'`"
+
+printf "%-15s %8s %8s %12s %12s\n" host in_mbps out_mbps in_pps out_pps
+printf "%-15s %8.2f %8.2f %12u %12u\n" $t_records
