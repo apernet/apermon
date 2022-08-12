@@ -7,8 +7,9 @@
 
 #define CONTRIB_TRACK_SIZE 100
 #define MAX_RECORDS_PER_FLOW 1024
-#define RUNNING_AVERAGE_SIZE 100
+#define RUNNING_AVERAGE_SIZE 10
 #define FLOW_DUMP_BACKTRACK 10
+#define MIN_CALC_INTERVAL 1000000 // us
 
 typedef struct _apermon_context apermon_context;
 typedef struct _apermon_aggregated_flow apermon_aggregated_flow;
@@ -24,7 +25,6 @@ typedef struct _apermon_aggregated_flow {
     uint64_t current_in_bytes, current_out_bytes;
     uint64_t current_in_pkts, current_out_pkts;
 
-    size_t running_average_index;
     uint64_t in_bps, out_bps;
     uint64_t in_pps, out_pps;
 
@@ -34,17 +34,10 @@ typedef struct _apermon_aggregated_flow {
     size_t contrib_flows_index;
 } apermon_aggregated_flow;
 
-typedef struct _apermon_aggregated_flow_average {
-    uint64_t in_bps, out_bps;
-    uint64_t in_pps, out_pps;
-} apermon_aggregated_flow_average;
-
 int aggergrate_flows(apermon_context *ctx);
 
 apermon_aggregated_flow *new_aflow();
 void free_aflow(void *flow);
-
-const apermon_aggregated_flow_average* running_average(const apermon_aggregated_flow *af); // not thread safe - uses local struct
 
 void dump_flows(FILE *to, const apermon_context *ctx);
 

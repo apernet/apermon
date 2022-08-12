@@ -6,13 +6,15 @@
 #include "condition.h"
 #include "log.h"
 
-static apermon_aggregated_flow_average _running_average;
-
 static void finalize_aggergration(apermon_context *ctx) {
     apermon_hash_item *aggr = ctx->aggr_hash->head;
     apermon_aggregated_flow *af;
 
     time_t dt = (ctx->now.tv_sec - ctx->last_aggregate.tv_sec) * 1000000 + (ctx->now.tv_usec - ctx->last_aggregate.tv_usec); // us
+
+    if (dt < MIN_CALC_INTERVAL) {
+        return;
+    }
 
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
@@ -30,9 +32,7 @@ static void finalize_aggergration(apermon_context *ctx) {
         af->current_in_pkts = af->current_out_bytes = 0;
         af->current_in_bytes = af->current_out_bytes = 0;
 
-        af->running_average_index = (af->running_average_index + 1) % RUNNING_AVERAGE_SIZE;
-
-        aggr = aggr->next;
+        aggr = aggr->iter_next;
     }
 
     ctx->last_aggregate = ctx->now;
@@ -184,21 +184,9 @@ void free_aflow(void *f) {
     free(flow);
 }
 
-const apermon_aggregated_flow_average *running_average(const apermon_aggregated_flow *af) {
-    size_t i = 0;
-
-    _running_average.in_bps = af->in_bps;
-    _running_average.out_bps = af->out_bps;
-    _running_average.in_pps = af->in_pps;
-    _running_average.out_pps = af->out_pps;
-
-    return &_running_average;
-}
-
 void dump_flows(FILE *to, const apermon_context *ctx) {
     apermon_hash_item *aggr = ctx->aggr_hash->head;
     apermon_aggregated_flow *af;
-    const apermon_aggregated_flow_average *avg;
 
     char addr[INET6_ADDRSTRLEN + 1];
 
@@ -216,10 +204,8 @@ void dump_flows(FILE *to, const apermon_context *ctx) {
             inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
         }
 
-        avg = running_average(af);
-
         fprintf(to, "%s,%s,%lu,%lu,%lu,%lu\n",
-            ctx->trigger_config->name, addr, avg->in_bps, avg->out_bps, avg->in_pps, avg->out_pps
+            ctx->trigger_config->name, addr, af->in_bps, af->out_bps, af->in_pps, af->out_pps
         );
 
         aggr = aggr->iter_next;

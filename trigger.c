@@ -14,7 +14,7 @@
 static const apermon_config *_config;
 static time_t _last_status_dump;
 
-static void run_trigger_script_ban(const apermon_config_triggers *config, const apermon_config_action_scripts *script, const apermon_aggregated_flow *flow, const apermon_aggregated_flow_average *metrics) {
+static void run_trigger_script_ban(const apermon_config_triggers *config, const apermon_config_action_scripts *script, const apermon_aggregated_flow *flow) {
     char **argv = calloc(2, sizeof(char *));
     char **envp = calloc(11, sizeof(char *));
     char strbuf[0xffff], addr[INET6_ADDRSTRLEN + 1], addr2[INET6_ADDRSTRLEN + 1];
@@ -88,16 +88,16 @@ static void run_trigger_script_ban(const apermon_config_triggers *config, const 
     }
 
 ban_end_net_and_prefix:
-    snprintf(strbuf, sizeof(strbuf), "IN_BPS=%lu", metrics->in_bps);
+    snprintf(strbuf, sizeof(strbuf), "IN_BPS=%lu", flow->in_bps);
     envp[4] = strdup(strbuf);
 
-    snprintf(strbuf, sizeof(strbuf), "OUT_BPS=%lu", metrics->out_bps);
+    snprintf(strbuf, sizeof(strbuf), "OUT_BPS=%lu", flow->out_bps);
     envp[5] = strdup(strbuf);
 
-    snprintf(strbuf, sizeof(strbuf), "IN_PPS=%lu", metrics->in_pps);
+    snprintf(strbuf, sizeof(strbuf), "IN_PPS=%lu", flow->in_pps);
     envp[6] = strdup(strbuf);
 
-    snprintf(strbuf, sizeof(strbuf), "OUT_PPS=%lu", metrics->out_pps);
+    snprintf(strbuf, sizeof(strbuf), "OUT_PPS=%lu", flow->out_pps);
     envp[7] = strdup(strbuf);
 
     offset += snprintf(strbuf, sizeof(strbuf), "FLOWS=af,in_ifindex,out_ifindex,src,dst,proto,sport,dport,bytes,packets\n");
@@ -271,14 +271,14 @@ static void unfire_trigger(const apermon_trigger_state *ts) {
     }
 }
 
-static void fire_trigger(const apermon_config_triggers *config, const apermon_aggregated_flow *flow, const apermon_aggregated_flow_average *metrics) {
+static void fire_trigger(const apermon_config_triggers *config, const apermon_aggregated_flow *flow) {
     apermon_trigger_state *ts = NULL, *old_ts = NULL;
     const apermon_context *ctx = config->ctx;
     const apermon_config_actions *action = config->action;
     const apermon_config_action_scripts *script = NULL;
     pid_t pid;
 
-    log_debug("trigger %s fired - in_bps %lu, out_bps %lu, in_pps %lu, out_pps %lu\n", config->name, metrics->in_bps, metrics->out_bps, metrics->in_pps, metrics->out_pps);
+    log_debug("trigger %s fired - in_bps %lu, out_bps %lu, in_pps %lu, out_pps %lu\n", config->name, flow->in_bps, flow->out_bps, flow->in_pps, flow->out_pps);
 
     if (flow->flow_af == SFLOW_AF_INET) {
         ts = hash32_find(ctx->trigger_status, &flow->inet);
@@ -339,7 +339,7 @@ static void fire_trigger(const apermon_config_triggers *config, const apermon_ag
         }
 
         if (pid == 0) {
-            run_trigger_script_ban(config, script, flow, metrics);
+            run_trigger_script_ban(config, script, flow);
             log_error("run_trigger_script_ban returned - exiting\n");
             exit(0);
         }
@@ -426,7 +426,6 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     uint64_t bps, pps;
 
     const apermon_flow_record *r = flows->records;
-    const apermon_aggregated_flow_average *avg;
 
     ctx->current_flows = flows;
     ctx->n_selected = 0;
@@ -450,18 +449,16 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
 
-        avg = running_average(af);
-        
-        bps = avg->in_bps > avg->out_bps ? avg->in_bps : avg->out_bps;
-        pps = avg->in_pps > avg->out_pps ? avg->in_pps : avg->out_pps;
+        bps = af->in_bps > af->out_bps ? af->in_bps : af->out_bps;
+        pps = af->in_pps > af->out_pps ? af->in_pps : af->out_pps;
 
         if (config->bps > 0) {
             if (bps >= config->bps) {
-                fire_trigger(config, af, avg);
+                fire_trigger(config, af);
             }
         } else if (config->pps > 0) {
             if (pps >= config->pps) {
-                fire_trigger(config, af, avg);
+                fire_trigger(config, af);
             }
         }
 
