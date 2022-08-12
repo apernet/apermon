@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <math.h>
 #include "flow.h"
 #include "context.h"
 #include "condition.h"
@@ -9,6 +10,7 @@
 static void finalize_aggergration(apermon_context *ctx) {
     apermon_hash_item *aggr = ctx->aggr_hash->head;
     apermon_aggregated_flow *af;
+    double tmp, exp_val;
 
     time_t dt = (ctx->now.tv_sec - ctx->last_aggregate.tv_sec) * 1000000 + (ctx->now.tv_usec - ctx->last_aggregate.tv_usec); // us
 
@@ -16,18 +18,42 @@ static void finalize_aggergration(apermon_context *ctx) {
         return;
     }
 
+    tmp = -((double) dt) / 1000000 / RUNNING_AVERAGE_SIZE;
+    exp_val = exp(tmp);
+
+#ifdef APERMON_DEBUG
+    log_debug("calculating running average, dt = %lu, exp_val = %f\n", dt, exp_val);
+#endif
+
     while (aggr != NULL) {
         af = (apermon_aggregated_flow *) aggr->value;
 
-        af->in_pps -= (af->in_pps / RUNNING_AVERAGE_SIZE);
-        af->out_pps -= (af->out_pps / RUNNING_AVERAGE_SIZE);
-        af->in_bps -= (af->in_bps / RUNNING_AVERAGE_SIZE);
-        af->out_bps -= (af->out_bps / RUNNING_AVERAGE_SIZE);
+#ifdef APERMON_DEBUG
+        char addr[INET6_ADDRSTRLEN + 1];
 
-        af->in_pps += af->current_in_pkts * 1000000 / dt / RUNNING_AVERAGE_SIZE;
-        af->in_bps += af->current_in_bytes * 8 * 1000000 / dt / RUNNING_AVERAGE_SIZE;
-        af->out_pps += af->current_out_pkts * 1000000 / dt / RUNNING_AVERAGE_SIZE;
-        af->out_bps += af->current_out_bytes * 8 * 1000000 / dt / RUNNING_AVERAGE_SIZE;
+        if (af->flow_af == SFLOW_AF_INET) {
+            inet_ntop(AF_INET, &af->inet, addr, sizeof(addr));
+        } else {
+            inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
+        }
+
+        log_debug("addr = %s\n", addr);
+        log_debug("[1] in_bps = %lu, out_bps = %lu, in_pps = %lu, out_pps = %lu\n", af->in_bps, af->out_bps, af->in_pps, af->out_pps);
+#endif
+
+        tmp = ((double) af->current_in_pkts) * 1000000 / dt;
+        af->in_pps = (uint64_t) (tmp + (exp_val * ((double) af->in_pps - tmp)));
+        tmp = ((double) af->current_out_pkts) * 1000000 / dt;
+        af->out_pps = (uint64_t) (tmp + (exp_val * ((double) af->out_pps - tmp)));
+        tmp = ((double) af->current_in_bytes) * 8 * 1000000 / dt;
+        af->in_bps = (uint64_t) (tmp + (exp_val * ((double) af->in_bps - tmp)));
+        tmp = ((double) af->current_out_bytes) * 8 * 1000000 / dt;
+        af->out_bps = (uint64_t) (tmp + (exp_val * ((double) af->out_bps - tmp)));
+        
+#ifdef APERMON_DEBUG
+        log_debug("[2] in_bps = %lu, out_bps = %lu, in_pps = %lu, out_pps = %lu\n", af->in_bps, af->out_bps, af->in_pps, af->out_pps);
+        log_debug("[current] in_b = %lu, out_b = %lu, in_p = %lu, out_p = %lu\n", af->current_in_bytes * 8, af->current_out_bytes * 8, af->current_in_pkts, af->current_out_pkts);
+#endif
 
         af->current_in_pkts = af->current_out_bytes = 0;
         af->current_in_bytes = af->current_out_bytes = 0;
