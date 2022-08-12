@@ -373,7 +373,7 @@ static void status_dump() {
         return;
     }
 
-    fprintf(fp, "trigger,addr,in_bps,out_bps,in_pps,out_pps\n");
+    fprintf(fp, "trigger,af,addr,in_bps,out_bps,in_pps,out_pps\n");
 
     while (t != NULL) {
         dump_flows(fp, t->ctx);

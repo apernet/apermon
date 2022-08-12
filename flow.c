@@ -230,8 +230,8 @@ void dump_flows(FILE *to, const apermon_context *ctx) {
             inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
         }
 
-        fprintf(to, "%s,%s,%lu,%lu,%lu,%lu\n",
-            ctx->trigger_config->name, addr, af->in_bps, af->out_bps, af->in_pps, af->out_pps
+        fprintf(to, "%s,%u,%s,%lu,%lu,%lu,%lu\n",
+            ctx->trigger_config->name, af->flow_af, addr, af->in_bps, af->out_bps, af->in_pps, af->out_pps
         );
 
         aggr = aggr->iter_next;
