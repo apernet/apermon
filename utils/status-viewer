@@ -11,7 +11,7 @@
 }
 
 records="`sed 1d "$1"`"
-t_records="`grep "^$2," <<< "$records" | sort -r -k4,5 -h -t, | awk -F, '{print $3 " " $4 / 1000000 " " $5 / 1000000 " " $6 " " $7}'`"
+t_records="`grep "^$2," <<< "$records" | sort -nr -k4,5 -t, | awk -F, '{print $3 " " $4 / 1000000 " " $5 / 1000000 " " $6 " " $7}'`"
 addr_len="`cut -d' ' -f1 <<< "$t_records" | wc -L`"
 
 [ -z "$t_records" ] && {
