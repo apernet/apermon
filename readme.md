@@ -99,7 +99,7 @@ Notes:
 - You may have more than one `listen`s.
 - Currently, the only supported protocol is `sflow`, and the only sflow arg is `v5`, which specifies sFlow version 5.
 - `min-ban-time` sets how long a host or network should be kept "banned" after it stops triggering thresholds. 
-- `status-file` dumps bps/pps of each host/net of each trigger to given file every `<time-in-second>` seconds.
+- `status-file` dumps bps/pps of each host/net of each trigger to given file every `<time-in-second>` seconds. Status file are just CSV, but can be viewed in a human-friendly way using the `utils/status-viewer` script.
 
 **`agents`** - defines agent(s) to listen samples from. Syntax:
 

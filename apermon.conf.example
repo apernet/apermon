@@ -4,7 +4,8 @@ options {
     listen 0.0.0.0 9001 sflow v5;   # you can listen multiple ports
     min-ban-time 300;               # default min ban time for host/net
     # dump bps/pps of each host/net of each trigger to file
-    status-file "/opt/apermon.status" dump-interval 5;
+    # can be viewed with "utils/status-viewer <status-file> <trigger-name>"
+    status-file "/var/run/apermon.status" dump-interval 5;
 }
 # define agnets to accept sflow packets from
 agents {
@@ -20,6 +21,7 @@ interfaces {
     # interface name
     hkix {
         # interface ifindexes - format "<agent_name>.<ifindex>"
+        # for junos, this is the "SNMP ifIndex"
         ifindexes [ qfx5110.500 qfx5110.501 ];
     }
     eie {
@@ -155,6 +157,9 @@ triggers {
         filter {
             protocol udp;
             source-port 123;
+        }
+        thresholds {
+            bps 300m;
         }
         action ntp;
     }
