@@ -77,7 +77,7 @@
 %type <trigger> trigger trigger_list
 %type <prefix_lists_set> prefix_lists_set prefix_lists_set_element
 %type <cond_func_list_element> filter filter_list
-%type <u64> proto_name
+%type <u64> proto_name number_with_unit unit
 
 %%
 config: config_item | config config_item
@@ -184,48 +184,26 @@ direction
 
 threshold_list: threshold | threshold_list threshold
 
+unit
+    : { $$ = 1; }
+    | K { $$ = 1 << 10; }
+    | M { $$ = 1 << 20; }
+    | G { $$ = 1 << 30; }
+
+number_with_unit
+    : NUMBER unit {
+        $$ = $1 * $2;
+    }
+    | DOUBLE unit {
+        $$ = (uint64_t) ($1 * (double) $2);
+    }
+
 threshold
-    : BPS NUMBER SEMICOLON {
+    : BPS number_with_unit SEMICOLON {
         get_current_trigger()->bps = $2;
     }
-    | BPS NUMBER K SEMICOLON {
-        get_current_trigger()->bps = $2 * 1000;
-    }
-    | BPS NUMBER M SEMICOLON {
-        get_current_trigger()->bps = $2 * 1000 * 1000;
-    }
-    | BPS NUMBER G SEMICOLON {
-        get_current_trigger()->bps = $2 * 1000 * 1000 * 1000;
-    }
-    | PPS NUMBER SEMICOLON {
+    | PPS number_with_unit SEMICOLON {
         get_current_trigger()->pps = $2;
-    }
-    | PPS NUMBER K SEMICOLON {
-        get_current_trigger()->pps = $2 * 1000;
-    }
-    | PPS NUMBER M SEMICOLON {
-        get_current_trigger()->pps = $2 * 1000 * 1000;
-    }
-    | PPS NUMBER G SEMICOLON {
-        get_current_trigger()->pps = $2 * 1000 * 1000 * 1000;
-    }
-    | BPS DOUBLE K SEMICOLON {
-        get_current_trigger()->bps = $2 * 1000;
-    }
-    | BPS DOUBLE M SEMICOLON {
-        get_current_trigger()->bps = $2 * 1000 * 1000;
-    }
-    | BPS DOUBLE G SEMICOLON {
-        get_current_trigger()->bps = $2 * 1000 * 1000 * 1000;
-    }
-    | PPS DOUBLE K SEMICOLON {
-        get_current_trigger()->pps = $2 * 1000;
-    }
-    | PPS DOUBLE M SEMICOLON {
-        get_current_trigger()->pps = $2 * 1000 * 1000;
-    }
-    | PPS DOUBLE G SEMICOLON {
-        get_current_trigger()->pps = $2 * 1000 * 1000 * 1000;
     }
 
 filter_list
