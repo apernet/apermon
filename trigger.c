@@ -485,9 +485,9 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
             continue;
         }
 
-        if (bps >= config->bps) {
+        if (config->bps > 0 && bps >= config->bps) {
             fire_trigger(config, af);
-        } else if (pps >= config->pps) {
+        } else if (config->pps > 0 && pps >= config->pps) {
             fire_trigger(config, af);
         }
 
