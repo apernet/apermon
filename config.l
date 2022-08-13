@@ -36,6 +36,10 @@ min-ban-time {
     return MIN_BAN_TIME;
 }
 
+burst-period {
+    return BURST_PERIOD;
+}
+
 status-file {
     return STATUS_FILE;
 }

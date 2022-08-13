@@ -48,7 +48,7 @@
     apermon_cond_func_list *cond_func_list_element;
 }
 
-%token OPTIONS LISTEN MIN_BAN_TIME STATUS_FILE DUMP_INTERVAL
+%token OPTIONS LISTEN MIN_BAN_TIME BURST_PERIOD STATUS_FILE DUMP_INTERVAL
 %token LBRACE RBRACE SEMICOLON LBRACK RBRACK
 %token SFLOW V5
 %token AGENTS ADDRESSES SAMPLE_RATE_CAP
@@ -120,6 +120,10 @@ trigger_option
     | MIN_BAN_TIME NUMBER SEMICOLON {
         get_current_trigger()->flags |= APERMON_TRIGGER_SET_BAN_TIME;
         get_current_trigger()->min_ban_time = $2;
+    }
+    | BURST_PERIOD NUMBER SEMICOLON {
+        get_current_trigger()->flags |= APERMON_TRIGGER_SET_BURST_PERIOD;
+        get_current_trigger()->burst_period = $2;
     }
     | DIRECTIONS LBRACK direction_list RBRACK SEMICOLON
     | AGGREGATE_TYPE HOST SEMICOLON {
@@ -480,6 +484,9 @@ option_items
     }
     | MIN_BAN_TIME NUMBER SEMICOLON {
         get_config()->min_ban_time = $2;
+    }
+    | BURST_PERIOD NUMBER SEMICOLON {
+        get_config()->burst_period = $2;
     }
     | STATUS_FILE QUOTED_STRING DUMP_INTERVAL NUMBER SEMICOLON {
         get_config()->status_file = strdup($2);

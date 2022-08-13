@@ -3,9 +3,10 @@
 #include "config.h"
 #include "extract.h"
 #include "flow.h"
-#define TRIGGER_UNBAN_SCAN_INTERVAL 10 // seconds
+#define APERMON_TRIGGER_FLAG_FIRED 0b00000001
 
 typedef struct _apermon_trigger_state {
+    uint8_t flags; /* APERMON_TRIGGER_FLAG_* */
     uint8_t af; /* enum sflow_af */
 
     union {

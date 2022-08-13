@@ -49,9 +49,10 @@ typedef struct _apermon_config_interfaces {
     struct _apermon_config_interfaces *next;
 } apermon_config_interfaces;
 
-#define APERMON_TRIGGER_CHECK_INGRESS   0b00000001
-#define APERMON_TRIGGER_CHECK_EGRESS    0b00000010
-#define APERMON_TRIGGER_SET_BAN_TIME    0b00000100
+#define APERMON_TRIGGER_CHECK_INGRESS       0b00000001
+#define APERMON_TRIGGER_CHECK_EGRESS        0b00000010
+#define APERMON_TRIGGER_SET_BAN_TIME        0b00000100
+#define APERMON_TRIGGER_SET_BURST_PERIOD    0b00001000
 
 enum aggregator {
     APERMON_AGGREGATOR_HOST,
@@ -108,6 +109,7 @@ typedef struct _apermon_config_triggers {
     uint64_t pps;
     
     uint32_t min_ban_time;
+    uint32_t burst_period;
 
     apermon_cond_list *conds; // owned by us
     apermon_context *ctx; // owned by us
@@ -128,6 +130,7 @@ typedef struct _apermon_config {
     apermon_hash *agents_hash; /* maps agent inet/inet6 -> agent struct */
 
     uint32_t min_ban_time;
+    uint32_t burst_period;
 
     char *status_file;
     uint32_t status_dump_interval;

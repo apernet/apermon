@@ -92,6 +92,7 @@ Let's break it down:
 options {
     listen <host> <port> <protocol> <protocol-args>;
     min-ban-time <time-in-second>;
+    burst-period <time-in-second>;
     status-file "<file-path>" dump-interval <time-in-second>;
 }
 ```
@@ -100,7 +101,8 @@ Notes:
 
 - You may have more than one `listen`s.
 - Currently, the only supported protocol is `sflow`, and the only sflow arg is `v5`, which specifies sFlow version 5.
-- `min-ban-time` sets how long a host or network should be kept "banned" after it stops triggering thresholds. 
+- `min-ban-time` sets how long a host or network should be kept "banned" after it stops triggering thresholds. `0` to disable banning.
+- `burst-period` sets how long hosts and networks are allowed to burst beyond set thresholds without getting banned. `0` to disable bursting. 
 - `status-file` dumps bps/pps of each host/net of each trigger to given file every `<time-in-second>` seconds. Status file are just CSV, but can be viewed in a human-friendly way using the `utils/status-viewer` script.
 
 **`agents`** - defines agent(s) to listen samples from. Syntax:
@@ -202,26 +204,26 @@ Notes:
 ```
 triggers {
     trigger-name-1 {
-        networks [ prefix-1 prefix-2 ];
+        min-ban-time <time-in-second>;
+        burst-period <time-in-second>;
+        networks [ <prefix-name-1> <prefix-name-2> ... ];
         directions [ ingress egress ];
-        aggregate-type host;
+        aggregate-type <host|net>;
         thresholds {
-            bps 2.5g;
-            pps 1m;
+            bps <number>[k|m|g];
+            pps <number>[k|m|g];
         }
         filter {
-            not {
-                source whitelist;
-                destination whitelist;
-            }
+            ...
         }
-        action blackhole;
+        action <action-name>;
     }
 }
 ```
 
 Notes:
 
+- `min-ban-time` and `burst-period` override the global value if set.
 - `networks` should be the name of a prefix list defined in `prefixes`.
 - Possible values of `directions` are:
     - `ingress`: to the network(s) and/or host(s) defined in `networks`.

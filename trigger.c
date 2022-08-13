@@ -306,11 +306,18 @@ static void fire_trigger(const apermon_config_triggers *config, const apermon_ag
         log_warn("internal error: apermon_trigger_state struct replaced in hash\n");
     }
 
-    if (old_ts != NULL) {
+    if (old_ts != NULL && old_ts->flags & APERMON_TRIGGER_FLAG_FIRED) {
         // old trigger status is not null - meaning last trigger has not been unfired yet, don't run action.
         log_debug("trigger '%s' has not been unfired since last fired, not running action.\n", config->name);
         return;
     }
+
+    if (ts->last_triggered - ts->first_triggered <= ts->trigger->burst_period) {
+        log_debug("allowing trigger '%s' to burst...\n", config->name);
+        return;
+    }
+
+    ts->flags |= APERMON_TRIGGER_FLAG_FIRED;
 
     if (action == NULL) {
         log_warn("triggered '%s' fired but no action configured\n", config->name);
@@ -352,12 +359,27 @@ static void unban_scan(apermon_context *ctx) {
 
     while (item != NULL) {
         ts = (apermon_trigger_state *) item->value;
-        if (ctx->now.tv_sec - ts->last_triggered > ctx->trigger_config->min_ban_time) {
+        if (ctx->now.tv_sec - ts->last_triggered > ctx->trigger_config->min_ban_time && ts->flags & APERMON_TRIGGER_FLAG_FIRED) {
             unfire_trigger(ts);
             item = hash_erase(ctx->trigger_status, item, free);
-        } else {
-            item = item->iter_next;
+            continue;
         }
+
+        if (item == NULL) {
+            break;
+        }
+
+        if (ctx->now.tv_sec - ts->last_triggered > ctx->trigger_config->burst_period && !(ts->flags & APERMON_TRIGGER_FLAG_FIRED)) {
+            log_debug("freeing unfired trigger '%s' (untriggered w/in burst_period)\n", ts->trigger->name);
+            item = hash_erase(ctx->trigger_status, item, free);
+            continue;
+        }
+
+        if (item == NULL) {
+            break;
+        } 
+
+        item = item->iter_next;
     }
 }
 
@@ -403,7 +425,7 @@ void triggers_timed_callback() {
             gc_context(ctx);
         }
 
-        if (ctx->now.tv_sec - ctx->last_unban_scan > TRIGGER_UNBAN_SCAN_INTERVAL) {
+        if (ctx->now.tv_sec - ctx->last_unban_scan > 1) {
             ctx->last_unban_scan = ctx->now.tv_sec;
             unban_scan(ctx);
         }

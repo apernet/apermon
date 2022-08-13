@@ -225,6 +225,10 @@ void end_config() {
             t->min_ban_time = _config->min_ban_time;
         }
 
+        if (!(t->flags & APERMON_TRIGGER_SET_BURST_PERIOD)) {
+            t->burst_period = _config->burst_period;
+        }
+
         t = t->next;
     }
 
