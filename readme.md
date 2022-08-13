@@ -168,6 +168,7 @@ Notes:
     - `ban`: run the script when an IP address or network should be "banned." (i.e., trigger fired)
     - `unban`: run the script when an IP address or network should be "unbanned." 
 - For `ban` events, the following environment variables are passed to the script (values are just example):
+    - `TRIGGER=protect-my-network`: name of the trigger.
     - `TYPE=ban`: type of event. Always `ban` for `ban` event.
     - `AF=1`: address family. `1` - IPv4, `2` - IPv6.
     - `AGGREGATOR=host`: aggergator type. See above. 
@@ -190,6 +191,7 @@ Notes:
         - `bytes`: number of bytes.
         - `packets`: number of packets.
 - For `unban` events, the following environment variables are passed to the script (values are just example):
+    - `TRIGGER=protect-my-network`: name of the trigger.
     - `TYPE=unban`: type of event. Always `unban` for `unban` event.
     - `AF=1`: address family. `1` - IPv4, `2` - IPv6.
     - `AGGREGATOR=host`: aggergator type. See above. 
