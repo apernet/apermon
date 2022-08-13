@@ -17,7 +17,7 @@ TOP_FLOWS_COUNT="${TOP_FLOWS_COUNT:-10}"
 }
 
 [ "$TYPE" = "unban" ] && {
-    printf '[a %s in "%s" is triggering ban]\n\n' "$AGGREGATOR" "$NET" 
+    printf '[a %s in "%s" is triggering unban]\n\n' "$AGGREGATOR" "$NET" 
     printf '%s: %s\n' "$AGGREGATOR" "$ADDR"
     printf 'prefix: %s\n' "$PREFIX"
     printf 'first triggered: %s\n' "`date -d @$FIRST_TRIGGERED`"
