@@ -16,7 +16,7 @@ debug-verbose: CFLAGS+=-DAPERMON_DEBUG -O0 -g
 debug-verbose: apermon
 
 apermon: $(OBJS)
-	$(CC) -o apermon $(OBJS) $(LDFLAGS) -O3
+	$(CC) -o apermon $(OBJS) $(LDFLAGS)
 
 config.tab.c: config.y
 	$(BISON) -d config.y
