@@ -55,7 +55,7 @@ static void finalize_aggergration(apermon_context *ctx) {
         log_debug("[current] in_b = %lu, out_b = %lu, in_p = %lu, out_p = %lu\n", af->current_in_bytes * 8, af->current_out_bytes * 8, af->current_in_pkts, af->current_out_pkts);
 #endif
 
-        af->current_in_pkts = af->current_out_bytes = 0;
+        af->current_in_pkts = af->current_out_pkts = 0;
         af->current_in_bytes = af->current_out_bytes = 0;
 
         aggr = aggr->iter_next;
