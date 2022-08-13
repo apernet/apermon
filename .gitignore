@@ -3,4 +3,7 @@ apermon
 *.tab.c
 *.tab.h
 *.yy.c
+*.dev
+*.dev.c
+*.status
 .vscode
