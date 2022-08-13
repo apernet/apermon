@@ -200,6 +200,10 @@ Notes:
     - `ADDR=192.0.2.1`: host/network to be unbanned.
     - `PREFIX=192.0.2.0/24`: prefix containing the address.
     - `NET=my-network`: name of the network.
+    - `PEAK_IN_PPS=114514`: peak inbound pps to the host/network.
+    - `PEAK_OUT_PPS=1919810`: peak outbound pps from the host/network.
+    - `PEAK_IN_BPS=171771000`: peak inbound bps to the host/network.
+    - `PEAK_OUT_BPS=2879715000`: peak outbound bps from the host/network.
 
 **`triggers`** - defines triggers. i.e., when to do what. Syntax:
 
