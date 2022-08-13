@@ -226,7 +226,7 @@ unban_end_net_and_prefix:
     snprintf(strbuf, sizeof(strbuf), "TRIGGER=%s", ts->trigger->name);
     envp[8] = strdup(strbuf);
 
-    snprint(strbuf, sizeof(strbuf), "PEAK_IN_PPS=%lu", ts->peak_in_pps);
+    snprintf(strbuf, sizeof(strbuf), "PEAK_IN_PPS=%lu", ts->peak_in_pps);
     envp[9] = strdup(strbuf);
 
     snprintf(strbuf, sizeof(strbuf), "PEAK_OUT_PPS=%lu", ts->peak_out_pps);
