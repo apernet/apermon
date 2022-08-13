@@ -480,14 +480,15 @@ int run_trigger(const apermon_config_triggers *config, const apermon_flows *flow
         bps = af->in_bps > af->out_bps ? af->in_bps : af->out_bps;
         pps = af->in_pps > af->out_pps ? af->in_pps : af->out_pps;
 
-        if (config->bps > 0) {
-            if (bps >= config->bps) {
-                fire_trigger(config, af);
-            }
-        } else if (config->pps > 0) {
-            if (pps >= config->pps) {
-                fire_trigger(config, af);
-            }
+        if (config->min_ban_time == 0) {
+            aggr = aggr->iter_next;
+            continue;
+        }
+
+        if (bps >= config->bps) {
+            fire_trigger(config, af);
+        } else if (pps >= config->pps) {
+            fire_trigger(config, af);
         }
 
         aggr = aggr->iter_next;
