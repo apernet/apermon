@@ -19,11 +19,13 @@ typedef struct _apermon_prefix {
     uint8_t cidr;
 } apermon_prefix;
 
+void apermon_inet6_mask_apply(uint8_t *maksed, const uint8_t *from, const uint8_t *mask);
+
 int apermon_prefix_match_inet(const apermon_prefix* lst, uint32_t addr);
 int apermon_prefix_match_inet6(const apermon_prefix* lst, const uint8_t *addr);
 
-int apermon_prefix_list_match_inet(const apermon_config_prefix_list_elements* lst, uint32_t addr);
-int apermon_prefix_list_match_inet6(const apermon_config_prefix_list_elements* lst, const uint8_t *addr);
+const apermon_prefix* apermon_prefix_list_match_inet(const apermon_config_prefix_list_elements* lst, uint32_t addr);
+const apermon_prefix* apermon_prefix_list_match_inet6(const apermon_config_prefix_list_elements* lst, const uint8_t *addr);
 
 apermon_prefix *new_prefix();
 void free_prefix(apermon_prefix *prefix);

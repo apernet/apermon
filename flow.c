@@ -69,9 +69,16 @@ static void add_contrib_flow(apermon_aggregated_flow *af, const apermon_flow_rec
     af->contrib_flows_index = (af->contrib_flows_index + 1) % CONTRIB_TRACK_SIZE;
 }
 
-static apermon_aggregated_flow *aggergrate_flows_host_inet(apermon_context *ctx, uint32_t addr, const apermon_flow_record *flow, uint8_t dir) {
-    apermon_aggregated_flow *af = hash32_find(ctx->aggr_hash, &addr), *oldval = NULL;
+static apermon_aggregated_flow *aggergrate_flows_inet(apermon_context *ctx, uint32_t addr, const apermon_prefix *pfx, const apermon_flow_record *flow, uint8_t dir) {
+    apermon_aggregated_flow *af, *oldval = NULL;
     uint32_t rate = flow->rate, cap = ctx->current_flows->agent->sample_rate_cap;
+    uint32_t target = addr;
+
+    if (ctx->trigger_config->aggregator == APERMON_AGGREGATOR_NET) {
+        target = pfx->inet;
+    }
+
+    af = hash32_find(ctx->aggr_hash, &target);
 
     if (cap > 0 && flow->rate > cap) {
         rate = cap;
@@ -83,7 +90,8 @@ static apermon_aggregated_flow *aggergrate_flows_host_inet(apermon_context *ctx,
 
     af->last_modified = ctx->now.tv_sec;
     af->flow_af = SFLOW_AF_INET;
-    af->inet = addr;
+    af->inet = target;
+    af->prefix = pfx;
 
     if (dir == FLOW_INGRESS) {
         af->current_in_bytes += flow->frame_length * rate;
@@ -93,7 +101,7 @@ static apermon_aggregated_flow *aggergrate_flows_host_inet(apermon_context *ctx,
         af->current_out_pkts += rate;
     }
 
-    hash32_add_or_update(ctx->aggr_hash, &addr, af, (void **) &oldval);
+    hash32_add_or_update(ctx->aggr_hash, &target, af, (void **) &oldval);
 
     if (oldval != af && oldval != NULL) {
         log_warn("internal error: apermon_aggregated_flow struct replaced in hash\n");
@@ -103,9 +111,16 @@ static apermon_aggregated_flow *aggergrate_flows_host_inet(apermon_context *ctx,
     return af;
 }
 
-static apermon_aggregated_flow *aggergrate_flows_host_inet6(apermon_context *ctx, const uint8_t *addr, const apermon_flow_record *flow, uint8_t dir) {
-    apermon_aggregated_flow *af = hash128_find(ctx->aggr_hash, addr), *oldval = NULL;
+static apermon_aggregated_flow *aggergrate_flows_inet6(apermon_context *ctx, const uint8_t *addr, const apermon_prefix *pfx, const apermon_flow_record *flow, uint8_t dir) {
+    apermon_aggregated_flow *af, *oldval = NULL;
     uint32_t rate = flow->rate, cap = ctx->current_flows->agent->sample_rate_cap;
+    const uint8_t *target = addr;
+
+    if (ctx->trigger_config->aggregator == APERMON_AGGREGATOR_NET) {
+        target = pfx->inet6;
+    }
+
+    af = hash128_find(ctx->aggr_hash, target);
 
     if (cap > 0 && flow->rate > cap) {
         rate = cap;
@@ -117,7 +132,9 @@ static apermon_aggregated_flow *aggergrate_flows_host_inet6(apermon_context *ctx
 
     af->last_modified = ctx->now.tv_sec;
     af->flow_af = SFLOW_AF_INET6;
-    memcpy(af->inet6, addr, sizeof(af->inet6));
+    memcpy(af->inet6, target, sizeof(af->inet6));
+    af->prefix = pfx;
+
     if (dir == FLOW_INGRESS) {
         af->current_in_bytes += flow->frame_length * rate;
         af->current_in_pkts += rate;
@@ -126,7 +143,7 @@ static apermon_aggregated_flow *aggergrate_flows_host_inet6(apermon_context *ctx
         af->current_out_pkts += rate;
     }
 
-    hash128_add_or_update(ctx->aggr_hash, addr, af, (void **) &oldval);
+    hash128_add_or_update(ctx->aggr_hash, target, af, (void **) &oldval);
 
     if (oldval != af && oldval != NULL) {
         log_warn("internal error: apermon_aggregated_flow struct replaced in hash\n");
@@ -136,29 +153,31 @@ static apermon_aggregated_flow *aggergrate_flows_host_inet6(apermon_context *ctx
     return af;
 }
 
-static int aggergrate_flows_host(apermon_context *ctx) {
+int aggergrate_flows(apermon_context *ctx) {
     const apermon_config_triggers *t = ctx->trigger_config;
     const apermon_flow_record *flow;
+    const apermon_prefix *pfx;
     size_t i;
     uint8_t dir;
 
     for (i = 0; i < ctx->n_selected; ++i) {
         flow = ctx->selected_flows[i];
         dir = ctx->flow_directions[i];
+        pfx = ctx->selected_prefixes[i];
 
         if (t->flags & APERMON_TRIGGER_CHECK_INGRESS && dir == FLOW_INGRESS) {
             if (flow->flow_af == SFLOW_AF_INET) {
-                aggergrate_flows_host_inet(ctx, flow->dst_inet, flow, dir);
+                aggergrate_flows_inet(ctx, flow->dst_inet, pfx, flow, dir);
             } else if (flow->flow_af == SFLOW_AF_INET6) {
-                aggergrate_flows_host_inet6(ctx, flow->dst_inet6, flow, dir);
+                aggergrate_flows_inet6(ctx, flow->dst_inet6, pfx, flow, dir);
             } else {
                 log_error("internal error: bad af.\n");
             }
         } else if (t->flags & APERMON_TRIGGER_CHECK_EGRESS && dir == FLOW_EGRESS) {
             if (flow->flow_af == SFLOW_AF_INET) {
-                aggergrate_flows_host_inet(ctx, flow->src_inet, flow, dir);
+                aggergrate_flows_inet(ctx, flow->src_inet, pfx, flow, dir);
             } else if (flow->flow_af == SFLOW_AF_INET6) {
-                aggergrate_flows_host_inet6(ctx, flow->src_inet6, flow, dir);
+                aggergrate_flows_inet6(ctx, flow->src_inet6, pfx, flow, dir);
             } else {
                 log_error("internal error: bad af.\n");
             }
@@ -168,30 +187,6 @@ static int aggergrate_flows_host(apermon_context *ctx) {
     finalize_aggergration(ctx);
 
     return 0;
-}
-
-static int aggergrate_flows_net(apermon_context *ctx) {
-    // todo
-    return -1;
-}
-
-int aggergrate_flows(apermon_context *ctx) {
-    const apermon_config_triggers *t = ctx->trigger_config;
-    int ret = -1;
-
-    if (t->aggregator == APERMON_AGGREGATOR_HOST) {
-        ret = aggergrate_flows_host(ctx);
-    } else if (t->aggregator == APERMON_AGGREGATOR_NET) {
-        ret = aggergrate_flows_net(ctx);
-    } else {
-        log_error("internal error: unknown aggregator %d in trigger %s\n", ctx->trigger_config->aggregator, ctx->trigger_config->name);
-    }
-
-    if (ret < 0) {
-        log_error("internal error: aggergrate_flows failed (trigger: %s).\n", ctx->trigger_config->name);
-    }
-
-    return ret;
 }
 
 apermon_aggregated_flow *new_aflow() {
@@ -230,9 +225,15 @@ void dump_flows(FILE *to, const apermon_context *ctx) {
             inet_ntop(AF_INET6, af->inet6, addr, sizeof(addr));
         }
 
-        fprintf(to, "%s,%u,%s,%lu,%lu,%lu,%lu\n",
-            ctx->trigger_config->name, af->flow_af, addr, af->in_bps, af->out_bps, af->in_pps, af->out_pps
-        );
+        if (ctx->trigger_config->aggregator == APERMON_AGGREGATOR_NET) {
+            fprintf(to, "%s,%d,%u,%s/%u,%lu,%lu,%lu,%lu\n",
+                ctx->trigger_config->name, ctx->trigger_config->aggregator, af->flow_af, addr, af->prefix->cidr, af->in_bps, af->out_bps, af->in_pps, af->out_pps
+            );
+        } else {
+            fprintf(to, "%s,%d,%u,%s,%lu,%lu,%lu,%lu\n",
+                ctx->trigger_config->name, ctx->trigger_config->aggregator, af->flow_af, addr, af->in_bps, af->out_bps, af->in_pps, af->out_pps
+            );
+        }
 
         aggr = aggr->iter_next;
     }

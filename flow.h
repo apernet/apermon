@@ -22,6 +22,7 @@ typedef struct _apermon_aggregated_flow {
         uint8_t inet6[16];
     };
 
+    const apermon_prefix *prefix;
     uint64_t current_in_bytes, current_out_bytes;
     uint64_t current_in_pkts, current_out_pkts;
 

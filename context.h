@@ -20,6 +20,7 @@ typedef struct _apermon_context {
     // info about current batch of flow records
     const apermon_flows *current_flows; /* not own by us */
     const apermon_flow_record *selected_flows[MAX_RECORDS_PER_FLOW]; /* not own by us */
+    const apermon_prefix *selected_prefixes[MAX_RECORDS_PER_FLOW]; /* not own by us */
     uint8_t flow_directions[MAX_RECORDS_PER_FLOW];
     size_t n_selected;
     struct timeval now;

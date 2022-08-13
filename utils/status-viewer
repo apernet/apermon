@@ -11,13 +11,19 @@
 }
 
 records="`sed 1d "$1"`"
-t_records="`grep "^$2," <<< "$records" | sort -nr -k4,5 -t, | awk -F, '{print $3 " " $4 / 1000000 " " $5 / 1000000 " " $6 " " $7}'`"
+t_head=host
+t_records="`grep "^$2,0," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 " " $8}'`"
+[ -z "$t_records" ] && {
+    t_records="`grep "^$2,1," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 " " $8}'`"
+    t_head=net
+}
 addr_len="`cut -d' ' -f1 <<< "$t_records" | wc -L`"
 
 [ -z "$t_records" ] && {
+    t_head="???"
     t_records="<no-flows>"
     addr_len=10
 }
 
-printf "%-${addr_len}s %8s %8s %12s %12s\n" host in_mbps out_mbps in_pps out_pps
+printf "%-${addr_len}s %8s %8s %12s %12s\n" $t_head in_mbps out_mbps in_pps out_pps
 printf "%-${addr_len}s %8.2f %8.2f %12u %12u\n" $t_records

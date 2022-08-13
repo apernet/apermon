@@ -3,8 +3,10 @@ apermon
 
 `apermon` is still WIP. Todos:
 
-- `net` type aggregator for triggers.
 - Foolproof configuration validation.
+- More filter terms?
+    - L3: TTL, Frag bit, DSCP, ECN, etc?
+    - L4: TCP flags?
 
 `apermon` is a sflow monitoring program. It can be used for various purposes - but its main goal is to allow setting some rules to filter traffics and triggers some external scripts when the set thresholds are reached.
 
@@ -166,6 +168,7 @@ Notes:
 - For `ban` events, the following environment variables are passed to the script (values are just example):
     - `TYPE=ban`: type of event. Always `ban` for `ban` event.
     - `AF=1`: address family. `1` - IPv4, `2` - IPv6.
+    - `AGGREGATOR=host`: aggergator type. See above. 
     - `ADDR=192.0.2.1`: host/network to be banned.
     - `PREFIX=192.0.2.0/24`: prefix containing the address.
     - `NET=my-network`: name of the network.
@@ -187,6 +190,7 @@ Notes:
 - For `unban` events, the following environment variables are passed to the script (values are just example):
     - `TYPE=unban`: type of event. Always `unban` for `unban` event.
     - `AF=1`: address family. `1` - IPv4, `2` - IPv6.
+    - `AGGREGATOR=host`: aggergator type. See above. 
     - `FIRST_TRIGGERED=1660166143`: timestamp of initial trigger.
     - `LAST_TRIGGERED=1660169743`: timestamp of last trigger.
     - `ADDR=192.0.2.1`: host/network to be unbanned.
