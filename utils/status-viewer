@@ -1,29 +1,37 @@
 #!/usr/bin/env bash
 
 [ -z "$2" ] && {
-    echo "usage: $0 <status-file> <trigger-name>"
+    echo "usage: $0 <status-file> <trigger-name> [trigger-name ...]"
     exit 1
 }
 
 [ -z "$STATUS_VIEW_ONCE" ] && {
     export STATUS_VIEW_ONCE=1
-    watch -tn1 "$0" "$1" "$2"
+    watch -tn1 "$0" "$@"
 }
 
 records="`sed 1d "$1"`"
-t_head=host
-t_records="`grep "^$2,0," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 " " $8}'`"
-[ -z "$t_records" ] && {
-    t_records="`grep "^$2,1," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 " " $8}'`"
-    t_head=net
-}
-addr_len="`cut -d' ' -f1 <<< "$t_records" | wc -L`"
 
-[ -z "$t_records" ] && {
-    t_head="???"
-    t_records="<no-flows>"
-    addr_len=10
-}
+shift 1
+for t in "$@"; do
+    printf 'trigger %s\n' "$t"
 
-printf "%-${addr_len}s %8s %8s %12s %12s\n" $t_head in_mbps out_mbps in_pps out_pps
-printf "%-${addr_len}s %8.2f %8.2f %12u %12u\n" $t_records
+    t_head=host
+    t_records="`grep "^$t,0," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 " " $8}'`"
+    [ -z "$t_records" ] && {
+        t_records="`grep "^$t,1," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 " " $8}'`"
+        t_head=net
+    }
+    addr_len="`cut -d' ' -f1 <<< "$t_records" | wc -L`"
+
+    [ -z "$t_records" ] && {
+        t_head="???"
+        t_records="<no-flows>"
+        addr_len=10
+    }
+
+    printf "  %-${addr_len}s %8s %8s %12s %12s\n" $t_head in_mbps out_mbps in_pps out_pps
+    printf "  %-${addr_len}s %8.2f %8.2f %12u %12u\n" $t_records
+    printf '\n'
+done
+
