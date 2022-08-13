@@ -22,6 +22,8 @@ TOP_FLOWS_COUNT="${TOP_FLOWS_COUNT:-10}"
     printf 'by: %s\n' "$TRIGGER"
     printf '%s: %s\n' "$AGGREGATOR" "$ADDR"
     printf 'prefix: %s\n' "$PREFIX"
+    printf 'peak in: %d Mbps, %d pps\n' "$((PEAK_IN_BPS / 1000000))" "$PEAK_IN_PPS"
+    printf 'peak out: %d Mbps, %d pps\n' "$((PEAK_OUT_BPS / 1000000))" "$PEAK_OUT_PPS"
     printf 'first triggered: %s\n' "`date -d @$FIRST_TRIGGERED`"
     printf 'last triggered: %s\n' "`date -d @$LAST_TRIGGERED`"
 }

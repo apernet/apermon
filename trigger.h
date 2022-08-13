@@ -14,6 +14,9 @@ typedef struct _apermon_trigger_state {
         uint8_t inet6[16];
     };
 
+    uint64_t peak_in_pps, peak_out_pps;
+    uint64_t peak_in_bps, peak_out_bps;
+
     const apermon_config_triggers *trigger; // not owned by us
 
     time_t last_triggered;

@@ -143,7 +143,7 @@ ban_end_net_and_prefix:
 
 static void run_trigger_script_unban(const apermon_trigger_state *ts, const apermon_config_action_scripts *script) {
     char **argv = calloc(2, sizeof(char *));
-    char **envp = calloc(10, sizeof(char *));
+    char **envp = calloc(14, sizeof(char *));
     char strbuf[0xffff], addr[INET6_ADDRSTRLEN + 1];
 
     const apermon_config_prefix_lists_set *set = ts->trigger->networks;
@@ -226,7 +226,19 @@ unban_end_net_and_prefix:
     snprintf(strbuf, sizeof(strbuf), "TRIGGER=%s", ts->trigger->name);
     envp[8] = strdup(strbuf);
 
-    envp[9] = NULL;
+    snprint(strbuf, sizeof(strbuf), "PEAK_IN_PPS=%lu", ts->peak_in_pps);
+    envp[9] = strdup(strbuf);
+
+    snprintf(strbuf, sizeof(strbuf), "PEAK_OUT_PPS=%lu", ts->peak_out_pps);
+    envp[10] = strdup(strbuf);
+
+    snprintf(strbuf, sizeof(strbuf), "PEAK_IN_BPS=%lu", ts->peak_in_bps);
+    envp[11] = strdup(strbuf);
+
+    snprintf(strbuf, sizeof(strbuf), "PEAK_OUT_BPS=%lu", ts->peak_out_bps);
+    envp[12] = strdup(strbuf);
+
+    envp[13] = NULL;
 
     ret = execve(script->name, argv, envp);
 
@@ -301,6 +313,11 @@ static void fire_trigger(const apermon_config_triggers *config, const apermon_ag
     ts->trigger = config;
     ts->af = flow->flow_af;
     ts->last_triggered = ctx->now.tv_sec;
+
+    ts->peak_in_bps = flow->in_bps > ts->peak_in_bps ? flow->in_bps : ts->peak_in_bps;
+    ts->peak_out_bps = flow->out_bps > ts->peak_out_bps ? flow->out_bps : ts->peak_out_bps;
+    ts->peak_in_pps = flow->in_pps > ts->peak_in_pps ? flow->in_pps : ts->peak_in_pps;
+    ts->peak_out_pps = flow->out_pps > ts->peak_out_pps ? flow->out_pps : ts->peak_out_pps;
 
     if (flow->flow_af == SFLOW_AF_INET) {
         ts->inet = flow->inet;
