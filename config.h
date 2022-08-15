@@ -56,6 +56,7 @@ typedef struct _apermon_config_interfaces {
 
 enum aggregator {
     APERMON_AGGREGATOR_HOST,
+    APERMON_AGGREGATOR_PREFIX,
     APERMON_AGGREGATOR_NET,
 };
 
