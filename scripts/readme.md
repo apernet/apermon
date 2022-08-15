@@ -5,9 +5,43 @@ Here are some ready-to-use example scripts that can be added to actions.
 
 ### exabgp.sh
 
-Announce / withdraw blackhole routes with [exabgp](https://github.com/Exa-Networks/exabgp).
+Announce / withdraw blackhole routes with [exabgp](https://github.com/Exa-Networks/exabgp). First [install exabgp 4.x](https://github.com/Exa-Networks/exabgp#installation) and socat. On a debian-based system:
 
-**TODO**
+```
+# apt install exabgp socat
+```
+
+Once installed, configure exabgp with your details. Example:
+
+```
+process apermon {
+    run /usr/bin/socat stdout pipe:/var/run/exabgp.sock;
+    encoder json;
+}
+
+neighbor 10.66.66.1 {
+    router-id 10.66.66.66;
+    local-address 10.66.66.66;
+    local-as 65001;
+    peer-as 65001;
+
+    api {
+        processes [ apermon ];
+    }
+}
+```
+
+If you installed `exabgp` with a package manager like `apt`, the configuration file is likely `/etc/exabgp/exabgp.conf`. Next, edit the script to fill in your details:
+
+```bash
+EXABGP_CONTROL_SOCKET='/var/run/exabgp.sock'
+EXABGP_COMMUNITIES=(65535:666 65001:666)
+EXABGP_NEXTHOP='10.66.66.66'
+LOCKFILE='/tmp/apermon-exabgp.lock'
+```
+
+- `EXABGP_CONTROL_SOCKET` should be the named pipe you created with socat in your exabgp configuration. You should configure proper permissions so this file is writeable by `apermon`.
+- `LOCKFILE` can be any file that's writable by `apermon`. 
 
 ### summary.sh
 
