@@ -41,7 +41,7 @@ void gc_context(apermon_context *ctx) {
         if (ctx->now.tv_sec - af->last_modified > CONTEXT_GC_STALE_TIME) {
             aggr = hash_erase(ctx->aggr_hash, aggr, free_aflow);
         } else {
-            aggr = aggr->next;
+            aggr = aggr->iter_next;
         }
     }
 }
