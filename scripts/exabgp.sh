@@ -3,6 +3,7 @@
 EXABGP_CONTROL_SOCKET='/var/run/exabgp.sock'
 EXABGP_COMMUNITIES=(65535:666 65001:666)
 EXABGP_NEXTHOP='10.66.66.66'
+LOCKFILE='/tmp/apermon-exabgp.lock'
 
 EXABGP_ANNOUNCE_TEMPLATE="announce route %s next-hop $EXABGP_NEXTHOP community [ ${EXABGP_COMMUNITIES[*]} ]\n"
 EXABGP_WITHDRAW_TEMPLATE="withdraw route %s next-hop $EXABGP_NEXTHOP\n"
@@ -24,10 +25,13 @@ EXABGP_WITHDRAW_TEMPLATE="withdraw route %s next-hop $EXABGP_NEXTHOP\n"
     [ "$AF" = "2" ] && target="$target/128"
 }
 
-[ -z "$TARGET" ] && {
+[ -z "$target" ] && {
     echo 'error: missing target'
     exit 1
 }
 
-[ "$TYPE" = "ban" ] && printf "$EXABGP_ANNOUNCE_TEMPLATE" "$target"  > "$EXABGP_CONTROL_SOCKET"
-[ "$TYPE" = "unban" ] && printf "$EXABGP_WITHDRAW_TEMPLATE" "$target" > "$EXABGP_CONTROL_SOCKET"
+{
+    flock 200
+    [ "$TYPE" = "ban" ] && printf "$EXABGP_ANNOUNCE_TEMPLATE" "$target"  > "$EXABGP_CONTROL_SOCKET"
+    [ "$TYPE" = "unban" ] && printf "$EXABGP_WITHDRAW_TEMPLATE" "$target" > "$EXABGP_CONTROL_SOCKET"
+} 200> "$LOCKFILE"
