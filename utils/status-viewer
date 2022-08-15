@@ -36,9 +36,9 @@ for t in "$@"; do
     printf 'trigger %s\n' "$t"
 
     t_head=host
-    t_records="`grep "^$t,0," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 " " $8 " " $5 / $7 / 8 " " $6 / $8 / 8}'`"
+    t_records="`grep "^$t,0," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 / 1000 " " $8 / 1000 " " $5 / $7 / 8 " " $6 / $8 / 8}'`"
     [ -z "$t_records" ] && {
-        t_records="`grep "^$t,1," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 " " $8 " " $5 / $7 / 8 " " $6 / $8 / 8}'`"
+        t_records="`grep "^$t,1," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 / 1000 " " $8 / 1000 " " $5 / $7 / 8 " " $6 / $8 / 8}'`"
         t_head=net
     }
     [ "$top_n" -gt 0 ] && {
@@ -52,8 +52,8 @@ for t in "$@"; do
         addr_len=10
     }
 
-    printf "  %-${addr_len}s %8s %8s %8s %8s %8s %8s\n" $t_head in_mbps out_mbps in_pps out_pps in_sz out_sz
-    printf "  %-${addr_len}s %8.0f %8.0f %8u %8u %8.0f %8.0f\n" $t_records
+    printf "  %-${addr_len}s %8s %8s %8s %8s %8s %8s\n" $t_head in_mbps out_mbps in_kpps out_kpps in_sz out_sz
+    printf "  %-${addr_len}s %8.2f %8.2f %8.2f %8.2f %8.0f %8.0f\n" $t_records
     printf '\n'
 done
 
