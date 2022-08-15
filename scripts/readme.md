@@ -43,6 +43,20 @@ LOCKFILE='/tmp/apermon-exabgp.lock'
 - `EXABGP_CONTROL_SOCKET` should be the named pipe you created with socat in your exabgp configuration. You should configure proper permissions so this file is writeable by `apermon`.
 - `LOCKFILE` can be any file that's writable by `apermon`. 
 
+Then simply add the script as a script for your action:
+
+```
+actions {
+    my-action {
+        script "/path/to/exabgp.sh" {
+            event [ ban unban ];
+        }
+        ...
+    }
+    ...
+}
+```
+
 ### summary.sh
 
 Prints summary of the event when called. It's meant to be called by other scripts (e.g., mailgun, telegram) to generate the message body. 
