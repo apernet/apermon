@@ -97,6 +97,11 @@ typedef struct _apermon_config_actions {
     struct _apermon_config_actions *next;
 } apermon_config_actions;
 
+typedef struct _apermon_config_action_set {
+    const apermon_config_actions *action; // not owned by us
+    struct _apermon_config_action_set *next;
+} apermon_config_action_set;
+
 typedef struct _apermon_config_triggers {
     char *name;
 
@@ -114,7 +119,7 @@ typedef struct _apermon_config_triggers {
     apermon_cond_list *conds; // owned by us
     apermon_context *ctx; // owned by us
 
-    const apermon_config_actions *action;
+    apermon_config_action_set *actions; // owned by us
 
     struct _apermon_config_triggers *next;
 } apermon_config_triggers;

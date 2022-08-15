@@ -200,10 +200,6 @@ destination-port {
     return DESTINATION_PORT;
 }
 
-action {
-    return ACTION;
-}
-
 \{ {
     return LBRACE;
 }

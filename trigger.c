@@ -249,50 +249,57 @@ unban_end_net_and_prefix:
 
 static void unfire_trigger(const apermon_trigger_state *ts) {
     const apermon_config_triggers *config = ts->trigger;
-    const apermon_config_actions *action = config->action;
+    const apermon_config_action_set *actions = config->actions;
+    const apermon_config_actions *action;
     const apermon_config_action_scripts *script = NULL;
     pid_t pid;
 
     log_debug("trigger %s unfired\n", ts->trigger->name);
 
-    if (action == NULL) {
-        log_warn("triggered '%s' fired but no action configured\n", config->name);
+    if (actions == NULL) {
+        log_warn("triggered '%s' fired but no action(s) configured\n", config->name);
         return;
     }
 
-    script = action->scripts;
+    while (actions != NULL) {
+        action = actions->action;
+        script = action->scripts;
 
-    if (script == NULL) {
-        log_warn("triggered '%s' fired but no action script configured in action '%s'\n", config->name, action->name);
-        return;
-    }
+        if (script == NULL) {
+            log_warn("triggered '%s' fired but no action script configured in action '%s'\n", config->name, action->name);
+            return;
+        }
 
-    while (script != NULL) {
-        if (!(script->flags & APERMON_SCRIPT_EVENT_UNBAN)) {
+        while (script != NULL) {
+            if (!(script->flags & APERMON_SCRIPT_EVENT_UNBAN)) {
+                script = script->next;
+                continue;
+            }
+
+            pid = fork();
+
+            if (pid < 0) {
+                log_error("fork(): %s\n", strerror(errno));
+            }
+
+            if (pid == 0) {
+                run_trigger_script_unban(ts, script);
+                log_error("run_trigger_script_unban returned - exiting\n");
+                exit(0);
+            }
+
             script = script->next;
-            continue;
         }
 
-        pid = fork();
-
-        if (pid < 0) {
-            log_error("fork(): %s\n", strerror(errno));
-        }
-
-        if (pid == 0) {
-            run_trigger_script_unban(ts, script);
-            log_error("run_trigger_script_unban returned - exiting\n");
-            exit(0);
-        }
-
-        script = script->next;
+        actions = actions->next;
     }
 }
 
 static void fire_trigger(const apermon_config_triggers *config, const apermon_aggregated_flow *flow) {
     apermon_trigger_state *ts = NULL, *old_ts = NULL;
     const apermon_context *ctx = config->ctx;
-    const apermon_config_actions *action = config->action;
+    const apermon_config_action_set *actions = config->actions;
+    const apermon_config_actions *action;
     const apermon_config_action_scripts *script = NULL;
     pid_t pid;
 
@@ -344,37 +351,42 @@ static void fire_trigger(const apermon_config_triggers *config, const apermon_ag
 
     ts->flags |= APERMON_TRIGGER_FLAG_FIRED;
 
-    if (action == NULL) {
-        log_warn("triggered '%s' fired but no action configured\n", config->name);
+    if (actions == NULL) {
+        log_warn("triggered '%s' fired but no action(s) configured\n", config->name);
         return;
     }
 
-    script = action->scripts;
+    while (actions != NULL) {
+        action = actions->action;
+        script = action->scripts;
 
-    if (script == NULL) {
-        log_warn("triggered '%s' fired but no action script configured in action '%s'\n", config->name, action->name);
-        return;
-    }
+        if (script == NULL) {
+            log_warn("triggered '%s' fired but no action script configured in action '%s'\n", config->name, action->name);
+            return;
+        }
 
-    while (script != NULL) {
-        if (!(script->flags & APERMON_SCRIPT_EVENT_BAN)) {
+        while (script != NULL) {
+            if (!(script->flags & APERMON_SCRIPT_EVENT_BAN)) {
+                script = script->next;
+                continue;
+            }
+
+            pid = fork();
+
+            if (pid < 0) {
+                log_error("fork(): %s\n", strerror(errno));
+            }
+
+            if (pid == 0) {
+                run_trigger_script_ban(config, script, flow);
+                log_error("run_trigger_script_ban returned - exiting\n");
+                exit(0);
+            }
+
             script = script->next;
-            continue;
         }
 
-        pid = fork();
-
-        if (pid < 0) {
-            log_error("fork(): %s\n", strerror(errno));
-        }
-
-        if (pid == 0) {
-            run_trigger_script_ban(config, script, flow);
-            log_error("run_trigger_script_ban returned - exiting\n");
-            exit(0);
-        }
-
-        script = script->next;
+        actions = actions->next;
     }
 }
 
