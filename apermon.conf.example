@@ -57,17 +57,11 @@ prefixes {
 # define actions
 actions {
     # action name
-    default {
+    default-blackhole {
         # script to invoke
-        script "/opt/apermon/scripts/apernet-announce-blackhole.sh" {
+        script "/opt/apermon/scripts/exabgp.sh" {
             # when to invoke the said script - possible values are: "ban" and
             # "unban"
-            events [ ban ];
-        }
-        script "/opt/apermon/scripts/apernet-withdraw-blackhole.sh" {
-            events [ ban ];
-        }
-        script "/opt/apermon/scripts/send-email.sh" {
             events [ ban unban ];
         }
     }
@@ -76,20 +70,22 @@ actions {
             events [ ban ];
         }
         script "/opt/apermon/scripts/apernet-withdraw-telstra-blackhole.sh" {
+            events [ unban ];
+        }
+    }
+    amplification-attack {
+        script "/opt/apermon/scripts/apernet-firewall-drop-amp-ports.sh" {
             events [ ban ];
         }
+        script "/opt/apermon/scripts/apernet-firewall-accept-amp-ports.sh" {
+            events [ unban ];
+        }
+    }
+    notify {
         script "/opt/apermon/scripts/send-email.sh" {
             events [ ban unban ];
         }
-    }
-    ntp {
-        script "/opt/apermon/scripts/apernet-firewall-drop-ntp.sh" {
-            events [ ban ];
-        }
-        script "/opt/apermon/scripts/apernet-firewall-accept-ntp.sh" {
-            events [ unban ];
-        }
-        script "/opt/apermon/scripts/send-email.sh" {
+        script "/opt/apermon/scripts/send-telegram.sh" {
             events [ ban unban ];
         }
     }
@@ -132,8 +128,8 @@ triggers {
             in-interface telstra;
             destination apernet-light;
         }
-        # action to take when the trigger status changes
-        action telstra-blackhole;
+        # actions to take when the trigger status changes
+        actions [ telstra-blackhole notify ];
     }
     apernet-light {
         min-ban-time 600;
@@ -150,7 +146,7 @@ triggers {
             pps 1m;
             bps 1g;
         }
-        action default;
+        actions [ default-blackhole notify ];
     }
     ntp {
         networks [ apernet-light apernet-premium ];
@@ -158,11 +154,14 @@ triggers {
         aggregate-type net;
         filter {
             protocol udp;
-            source-port 123;
+            or {
+                source-port 123;
+                source-port 389;
+            }
         }
         thresholds {
             bps 300m;
         }
-        action ntp;
+        actions [ amplification-attack notify ];
     }
 }

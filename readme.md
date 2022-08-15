@@ -59,8 +59,13 @@ actions {
         script "/opt/apermon/add-and-withdraw-blackhole.sh" {
             events [ ban unban ];
         }
+    }
+    notify {
         script "/opt/apermon/send-email.sh" {
             events [ ban ];
+        }
+        script "/opt/apermon/send-telegram.sh" {
+            events [ ban unban ];
         }
     }
 }
@@ -79,7 +84,7 @@ triggers {
                 destination whitelist;
             }
         }
-        action blackhole;
+        actions [ blackhole notify ];
     }
 }
 ```
@@ -222,7 +227,7 @@ triggers {
         filter {
             ...
         }
-        action <action-name>;
+        actions [ <action-name-1> <action-name-2> ... ];
     }
 }
 ```
@@ -253,7 +258,7 @@ Notes:
     - `source-port <number>;`: layer 4 source port.
     - `destination-port <number>;`: layer 4 destination port.
 - The three logical operators (`and`, `or`, and `not`) may be nested to build a more complex filter. If the root term under `filter {}` is not one of the logical operators, `and` is assumed.
-- `action` should be the name of an action defined in `actions`.
+- `actions` should be a list of names of actions defined in `actions`.
 
 **`interfaces`** - while not used above, you may also define named interfaces: 
 
@@ -302,7 +307,7 @@ triggers {
             bps 2.5g;
         }
 
-        action witdraw-prefix-from-costly-transit;
+        actions [ witdraw-prefix-from-costly-transit ];
     }
 
 }
