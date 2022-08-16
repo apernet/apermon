@@ -46,6 +46,7 @@
     apermon_config_triggers *trigger;
     apermon_config_prefix_lists_set *prefix_lists_set;
     apermon_cond_func_list *cond_func_list_element;
+    apermon_config_action_set *action_set;
 }
 
 %token OPTIONS LISTEN MIN_BAN_TIME BURST_PERIOD STATUS_FILE DUMP_INTERVAL
@@ -55,7 +56,7 @@
 %token INTERFACES IFINDEXES DOT
 %token PREFIXES SLASH
 %token ACTIONS SCRIPT EVENTS BAN UNBAN
-%token TRIGGERS NETWORKS DIRECTIONS INGRESS EGRESS AGGREGATE_TYPE HOST PREFIX NET ACTION
+%token TRIGGERS NETWORKS DIRECTIONS INGRESS EGRESS AGGREGATE_TYPE HOST PREFIX NET 
 %token THRESHOLDS BPS PPS K M G
 %token FILTER AND OR NOT SOURCE DESTINATION IN_INTERFACE OUT_INTERFACE PROTOCOL TCP UDP SOURCE_PORT DESTINATION_PORT
 
@@ -78,6 +79,7 @@
 %type <prefix_lists_set> prefix_lists_set prefix_lists_set_element
 %type <cond_func_list_element> filter filter_list
 %type <u64> proto_name number_with_unit unit
+%type <action_set> action_set action_set_element
 
 %%
 config: config_item | config config_item
@@ -145,18 +147,30 @@ trigger_option
 
         get_current_trigger()->conds = l;
     }
-    | ACTION IDENT SEMICOLON {
-        apermon_config_actions *action = get_action($2);
-
-        if (action == NULL) {
-            store_retval(-1);
-            log_error("unknown action '%s'\n", $2);
-            YYERROR;
-        }
-
-        get_current_trigger()->action = action;
-        free($2);
+    | ACTIONS LBRACK action_set RBRACK SEMICOLON {
+        get_current_trigger()->actions = $3;
     }
+
+action_set
+    : action_set_element
+    | action_set_element action_set {
+        $1->next = $2;
+    }
+
+action_set_element: IDENT {
+    apermon_config_actions *action = get_action($1);
+
+    if (action == NULL) {
+        store_retval(-1);
+        log_error("unknown action '%s'\n", $1);
+        YYERROR;
+    }
+
+    $$ = malloc(sizeof(apermon_config_action_set));
+    memset($$, 0, sizeof(apermon_config_action_set));
+    $$->action = action;
+    free($1);
+}
 
 prefix_lists_set
     : prefix_lists_set_element
