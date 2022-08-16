@@ -307,7 +307,10 @@ apermon_config_prefix_list_elements *new_prefix_inet(const struct in_addr *addr,
     prefix->prefix = new_prefix();
     prefix->prefix->af = SFLOW_AF_INET;
     prefix->prefix->inet = addr->s_addr;
-    prefix->prefix->mask = htonl(0xffffffff << (32 - prefix_len));
+    if (prefix_len != 0) {
+        prefix->prefix->mask = htonl(0xffffffff << (32 - prefix_len));
+    }
+
     prefix->prefix->cidr = prefix_len;
 
     return prefix;
