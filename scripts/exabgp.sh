@@ -18,20 +18,24 @@ EXABGP_WITHDRAW_TEMPLATE="withdraw route %s next-hop $EXABGP_NEXTHOP\n"
     exit 1
 }
 
-[ "$AGGREGATOR" = "net" ] && target="$PREFIX"
+[ "$AGGREGATOR" = "net" ] && targets="$PREFIX"
+[ "$AGGREGATOR" = "prefix" ] && targets="$PREFIX"
 [ "$AGGREGATOR" = "host" ] && {
-    target="$ADDR"
-    [ "$AF" = "1" ] && target="$target/32"
-    [ "$AF" = "2" ] && target="$target/128"
+    targets="$TARGET"
+    [ "$AF" = "1" ] && targets="$targets/32"
+    [ "$AF" = "2" ] && targets="$targets/128"
 }
 
-[ -z "$target" ] && {
-    echo 'error: missing target'
+[ -z "$targets" ] && {
+    echo 'error: missing target(s)'
     exit 1
 }
 
 {
     flock 200
-    [ "$TYPE" = "ban" ] && printf "$EXABGP_ANNOUNCE_TEMPLATE" "$target"  > "$EXABGP_CONTROL_SOCKET"
-    [ "$TYPE" = "unban" ] && printf "$EXABGP_WITHDRAW_TEMPLATE" "$target" > "$EXABGP_CONTROL_SOCKET"
+    for target in $targets; do {
+        [ "$TYPE" = "ban" ] && printf "$EXABGP_ANNOUNCE_TEMPLATE" "$target"  > "$EXABGP_CONTROL_SOCKET"
+        [ "$TYPE" = "unban" ] && printf "$EXABGP_WITHDRAW_TEMPLATE" "$target" > "$EXABGP_CONTROL_SOCKET"
+    }; done
+
 } 200> "$LOCKFILE"
