@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-EXABGP_CONTROL_SOCKET='/var/run/exabgp.sock'
-EXABGP_COMMUNITIES=(65535:666 65001:666)
-EXABGP_NEXTHOP='10.66.66.66'
-LOCKFILE='/tmp/apermon-exabgp.lock'
+[[ -z "$EXABGP_CONTROL_SOCKET" || -z "$EXABGP_COMMUNITIES" || -z "$EXABGP_NEXTHOP" || -z "$LOCKFILE" ]] && {
+    echo 'error: missing env'
+    exit 1
+}
 
-EXABGP_ANNOUNCE_TEMPLATE="announce route %s next-hop $EXABGP_NEXTHOP community [ ${EXABGP_COMMUNITIES[*]} ]\n"
+EXABGP_ANNOUNCE_TEMPLATE="announce route %s next-hop $EXABGP_NEXTHOP community [ $EXABGP_COMMUNITIES ]\n"
 EXABGP_WITHDRAW_TEMPLATE="withdraw route %s next-hop $EXABGP_NEXTHOP\n"
 
 [ ! -p "$EXABGP_CONTROL_SOCKET" ] && {

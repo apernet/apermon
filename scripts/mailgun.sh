@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-API_KEY='api:key-...'
-DOMAIN='noreply.example.com'
-FROM='AperMon <apermon@noreply.example.com>'
-TO='nat@example.com'
-SUBJECT="[apermon] $TRIGGER: $TYPE $TARGET"
+[[ -z "$API_KEY" || -z "$DOMAIN" || -z "$FROM" || -z "$TO" || -z "$SUBJECT" ]] && {
+    echo 'error: missing env'
+    exit 1
+}
+
+SUBJECT=`eval echo "$SUBJECT"`
 
 cd "`dirname "$0"`"
 
