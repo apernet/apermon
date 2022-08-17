@@ -4,7 +4,7 @@ API_KEY='api:key-...'
 DOMAIN='noreply.example.com'
 FROM='AperMon <apermon@noreply.example.com>'
 TO='nat@example.com'
-SUBJECT="[apermon] $TYPE $ADDR in $PREFIX ($NET)"
+SUBJECT="[apermon] $TRIGGER: $TYPE $TARGET"
 
 cd "`dirname "$0"`"
 
