@@ -14,6 +14,26 @@
 static const apermon_config *_config;
 static time_t _last_status_dump;
 
+static void env_dump_prefixes(const apermon_config_prefix_list_elements *el, char *buf, size_t len) {
+    int offset = snprintf(buf, len, "PREFIX=");
+    char addr[INET6_ADDRSTRLEN + 1];
+
+    while (el != NULL) {
+        if (el->prefix->af == SFLOW_AF_INET) {
+            inet_ntop(AF_INET, &el->prefix->inet, addr, sizeof(addr));
+        } else if (el->prefix->af == SFLOW_AF_INET6) {
+            inet_ntop(AF_INET6, &el->prefix->inet6, addr, sizeof(addr));
+        } else {
+            log_error("unknown flow address family %u.\n", el->prefix->af);
+            el = el->next;
+            continue;
+        }
+
+        offset += snprintf(buf + offset, len - offset, "%s/%u ", addr, el->prefix->cidr);
+        el = el->next;
+    }
+}
+
 static void run_trigger_script_ban(const apermon_config_triggers *config, const apermon_config_action_scripts *script, const apermon_aggregated_flow *flow) {
     char **argv = calloc(2, sizeof(char *));
     char **envp = calloc(13, sizeof(char *));
@@ -43,32 +63,34 @@ static void run_trigger_script_ban(const apermon_config_triggers *config, const 
         }
 
         snprintf(strbuf, sizeof(strbuf), "TARGET=%s", addr);
+        envp[1] = strdup(strbuf);
+        
+        snprintf(strbuf, sizeof(strbuf), "NET=%s", l->name);
+        envp[2] = strdup(strbuf);
+
+        if (pfx->af == SFLOW_AF_INET) {
+            inet_ntop(AF_INET, &pfx->inet, addr, sizeof(addr));
+            snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
+        } else if (pfx->af == SFLOW_AF_INET6) {
+            inet_ntop(AF_INET6, pfx->inet6, addr, sizeof(addr));
+            snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
+        } else {
+            log_error("internal error: unknown address family %u\n", pfx->af);
+            return;
+        }
+
+        envp[3] = strdup(strbuf);
     } else if (flow->aggregator == APERMON_AGGREGATOR_NET) {
         snprintf(strbuf, sizeof(strbuf), "TARGET=%s", flow->net->name);
+        envp[1] = strdup(strbuf);
+
+        snprintf(strbuf, sizeof(strbuf), "NET=%s", flow->net->name);
+        envp[2] = strdup(strbuf);
+
+        env_dump_prefixes(flow->net->elements, strbuf, sizeof(strbuf));
+        envp[3] = strdup(strbuf);
     } else {
         log_error("internal error: unknown aggregator type %u\n", flow->aggregator);
-        return;
-    }
-
-    envp[1] = strdup(strbuf);
-
-    if (pfx->af == SFLOW_AF_INET) {
-        snprintf(strbuf, sizeof(strbuf), "NET=%s", l->name);
-        envp[2] = strdup(strbuf);
-
-        inet_ntop(AF_INET, &pfx->inet, addr, sizeof(addr));
-
-        snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
-        envp[3] = strdup(strbuf);
-    } else if (pfx->af == SFLOW_AF_INET6) {
-        snprintf(strbuf, sizeof(strbuf), "NET=%s", l->name);
-        envp[2] = strdup(strbuf);
-
-        inet_ntop(AF_INET6, pfx->inet6, addr, sizeof(addr));
-        snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
-        envp[3] = strdup(strbuf);
-    } else {
-        log_error("internal error: unknown address family %u\n", pfx->af);
         return;
     }
 
@@ -165,34 +187,35 @@ static void run_trigger_script_unban(const apermon_trigger_state *ts, const aper
         }
 
         snprintf(strbuf, sizeof(strbuf), "TARGET=%s", addr);
+        envp[1] = strdup(strbuf);
+        
+        snprintf(strbuf, sizeof(strbuf), "NET=%s", l->name);
+        envp[2] = strdup(strbuf);
+
+        if (pfx->af == SFLOW_AF_INET) {
+            inet_ntop(AF_INET, &pfx->inet, addr, sizeof(addr));
+            snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
+        } else if (pfx->af == SFLOW_AF_INET6) {
+            inet_ntop(AF_INET6, pfx->inet6, addr, sizeof(addr));
+            snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
+        } else {
+            log_error("internal error: unknown address family %u\n", pfx->af);
+            return;
+        }
+
+        envp[3] = strdup(strbuf);
     } else if (ts->aggregator == APERMON_AGGREGATOR_NET) {
         snprintf(strbuf, sizeof(strbuf), "TARGET=%s", ts->net->name);
+        envp[1] = strdup(strbuf);
+
+        snprintf(strbuf, sizeof(strbuf), "NET=%s", ts->net->name);
+        envp[2] = strdup(strbuf);
+
+        env_dump_prefixes(ts->net->elements, strbuf, sizeof(strbuf));
+        envp[3] = strdup(strbuf);
     } else {
         log_error("internal error: unknown aggregator type %u\n", ts->aggregator);
         return;
-    }
-
-    envp[1] = strdup(strbuf);
-
-    if (pfx->af == SFLOW_AF_INET) {
-        if (apermon_prefix_match_inet(pfx, ts->inet)) {
-            snprintf(strbuf, sizeof(strbuf), "NET=%s", l->name);
-            envp[2] = strdup(strbuf);
-
-            inet_ntop(AF_INET, &pfx->inet, addr, sizeof(addr));
-
-            snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
-            envp[3] = strdup(strbuf);
-        }
-    } else {
-        if (apermon_prefix_match_inet6(pfx, ts->inet6)) {
-            snprintf(strbuf, sizeof(strbuf), "NET=%s", l->name);
-            envp[2] = strdup(strbuf);
-
-            inet_ntop(AF_INET6, pfx->inet6, addr, sizeof(addr));
-            snprintf(strbuf, sizeof(strbuf), "PREFIX=%s/%u", addr, pfx->cidr);
-            envp[3] = strdup(strbuf);
-        }
     }
 
     snprintf(strbuf, sizeof(strbuf), "FIRST_TRIGGERED=%lu", ts->first_triggered);
