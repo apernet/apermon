@@ -55,7 +55,7 @@
 %token AGENTS ADDRESSES SAMPLE_RATE_CAP
 %token INTERFACES IFINDEXES DOT
 %token PREFIXES SLASH
-%token ACTIONS SCRIPT EVENTS BAN UNBAN
+%token ACTIONS SCRIPT EVENTS BAN UNBAN ENV EQUALS
 %token TRIGGERS NETWORKS DIRECTIONS INGRESS EGRESS AGGREGATE_TYPE HOST PREFIX NET 
 %token THRESHOLDS BPS PPS K M G
 %token FILTER AND OR NOT SOURCE DESTINATION IN_INTERFACE OUT_INTERFACE PROTOCOL TCP UDP SOURCE_PORT DESTINATION_PORT
@@ -75,6 +75,7 @@
 %type <prefix_list_element> prefix prefix_elements
 %type <action> action action_list
 %type <action_script> action_script action_scripts
+%type <str> string
 %type <trigger> trigger trigger_list
 %type <prefix_lists_set> prefix_lists_set prefix_lists_set_element
 %type <cond_func_list_element> filter filter_list
@@ -373,6 +374,22 @@ script_options: script_option | script_options script_option
 
 script_option
     : EVENTS LBRACK script_events RBRACK SEMICOLON
+    | ENV LBRACE env_list RBRACE
+
+env_list: env | env_list env
+
+env: string EQUALS string SEMICOLON {
+    size_t len = strlen($1) + strlen($3) + 2; // +2 for '=' and '\0'
+    char *env = (char *) malloc(len);
+    memset(env, 0, len);
+    snprintf(env, len, "%s=%s", $1, $3);
+    get_current_action_script()->envs[get_current_action_script()->n_envs++] = env;
+    log_debug("env: %s\n", env);
+    free($1);
+    free($3);
+}
+
+string: QUOTED_STRING | IDENT
 
 script_events: script_event | script_events script_event
 

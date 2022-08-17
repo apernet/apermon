@@ -84,6 +84,10 @@ events {
     return EVENTS;
 }
 
+env {
+    return ENV;
+}
+
 ban {
     return BAN;
 }
@@ -230,6 +234,10 @@ destination-port {
 
 \/ {
     return SLASH;
+}
+
+= {
+    return EQUALS;
 }
 
 ([0-9]{1,3}\.){3}[0-9]{1,3} {

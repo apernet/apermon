@@ -44,6 +44,8 @@ void free_config(apermon_config *config) {
     apermon_config_prefix_lists_set *ps = NULL, *prev_ps = NULL;
     apermon_config_action_set *aset = NULL, *prev_aset = NULL;
 
+    size_t j;
+
     if (config->status_file) {
         free(config->status_file);
     }
@@ -180,6 +182,10 @@ void free_config(apermon_config *config) {
 
             if (as->name != NULL) {
                 free(as->name);
+            }
+
+            for (j = 0; j < as->n_envs; ++j) {
+                free(as->envs[j]);
             }
             
             prev_as = as;

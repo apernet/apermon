@@ -7,6 +7,8 @@
 #include "prefix-list.h"
 #include "hash.h"
 
+#define MAX_ENVS 128
+
 enum listen_protocol {
     APERMON_LISTEN_SFLOW_V5,
 };
@@ -87,6 +89,8 @@ typedef struct _apermon_config_action_scripts {
     char *name; // script path
 
     uint8_t flags; /* bit 0: ban, 1: unban */
+    char *envs[MAX_ENVS];
+    size_t n_envs;
 
     struct _apermon_config_action_scripts *next;
 } apermon_config_action_scripts;
