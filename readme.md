@@ -12,7 +12,7 @@ apermon
 
 ### usage
 
-First, clone the source and compile it. You will need some build tools, `flex` and `bison` to compile this project. On a debian-based system:
+First, clone the source and compile it. You will need some build tools, `flex`, and `bison` to compile this project. On a debian-based system:
 
 ```
 # apt install build-essential flex bison
@@ -61,11 +61,22 @@ actions {
         }
     }
     notify {
-        script "/opt/apermon/send-email.sh" {
-            events [ ban ];
-        }
-        script "/opt/apermon/send-telegram.sh" {
+        script "/opt/apermon/scripts/mailgun.sh" {
             events [ ban unban ];
+            env {
+                API_KEY = "api:key-...";
+                DOMAIN = "noreply.example.com";
+                FROM = "AperMon <apermon@noreply.example.com>";
+                TO = "noc@example.com";
+                SUBJECT = "[apermon] $TRIGGER: $TYPE $TARGET";
+            }
+        }
+        script "/opt/apermon/scripts/telegram.sh" {
+            events [ ban unban ];
+            env {
+                BOT_TOKEN = "...";
+                CHAT_ID = "...";
+            }
         }
     }
 }
@@ -152,10 +163,14 @@ prefixes {
 ```
 actions {
     action-1 {
-        script "script-1-path" {
+        script "/path/to/script/1.sh" {
             events [ ban unban ];
+            env {
+                ENV_1 = value_1;
+                ENV_2 = "value 2";
+            }
         }
-        script "script-2-path" {
+        script "/path/to/script/2.sh" {
             events [ ban ];
         }
         ...
@@ -209,6 +224,7 @@ Notes:
     - `PEAK_OUT_PPS=1919810`: peak outbound pps from the host/network.
     - `PEAK_IN_BPS=171771000`: peak inbound bps to the host/network.
     - `PEAK_OUT_BPS=2879715000`: peak outbound bps from the host/network.
+- To pass custom environment variables, use `env`.
 
 **`triggers`** - defines triggers. i.e., when to do what. Syntax:
 

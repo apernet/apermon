@@ -11,7 +11,7 @@ Announce / withdraw blackhole routes with [exabgp](https://github.com/Exa-Networ
 # apt install exabgp socat
 ```
 
-Once installed, configure exabgp with your details. Example:
+Once installed, configure exabgp with your details. If you installed `exabgp` with a package manager like `apt`, the configuration file is likely `/etc/exabgp/exabgp.conf`. Example configuration:
 
 ```
 process apermon {
@@ -31,31 +31,30 @@ neighbor 10.66.66.1 {
 }
 ```
 
-If you installed `exabgp` with a package manager like `apt`, the configuration file is likely `/etc/exabgp/exabgp.conf`. Next, edit the script to fill in your details:
-
-```bash
-EXABGP_CONTROL_SOCKET='/var/run/exabgp.sock'
-EXABGP_COMMUNITIES=(65535:666 65001:666)
-EXABGP_NEXTHOP='10.66.66.66'
-LOCKFILE='/tmp/apermon-exabgp.lock'
-```
-
-- `EXABGP_CONTROL_SOCKET` should be the named pipe you created with socat in your exabgp configuration. You should configure proper permissions so this file is writeable by `apermon`.
-- `LOCKFILE` can be any file that's writable by `apermon`. 
-
-Then simply add the script as a script for your action:
+Then add the script as a script for your action and set environment variables accordingly:
 
 ```
 actions {
     my-action {
         script "/path/to/exabgp.sh" {
             event [ ban unban ];
+            env {
+                EXABGP_CONTROL_SOCKET = "/var/run/exabgp.sock";
+                EXABGP_COMMUNITIES = "(65535:666 65001:666)";
+                EXABGP_NEXTHOP = "10.66.66.66";
+                LOCKFILE = "/tmp/apermon-exabgp.lock";
+            }
         }
         ...
     }
     ...
 }
 ```
+
+The variables should be self-explanatory. Note that: 
+
+- `EXABGP_CONTROL_SOCKET` should be the named pipe you created with socat in your exabgp configuration. You should configure proper permissions so this file is writeable by `apermon`.
+- `LOCKFILE` can be any file that's writable by `apermon`. 
 
 ### summary.sh
 
@@ -63,23 +62,20 @@ Prints summary of the event when called. It's meant to be called by other script
 
 ### mailgun.sh
 
-Sends email with mailgun. First edit the script to fill in your details:
-
-```bash
-API_KEY='api:key-...'
-DOMAIN='noreply.example.com'
-FROM='AperMon <apermon@noreply.example.com>'
-TO='nat@example.com'
-SUBJECT="[apermon] $TYPE $ADDR in $PREFIX ($NET)"
-```
-
-Then simply add the script as a script for your action:
+Sends email with mailgun. Add the script as a script for your action and set environment variables accordingly:
 
 ```
 actions {
     my-action {
         script "/path/to/mailgun.sh" {
             event [ ban unban ];
+            env {
+                API_KEY = "api:key-...";
+                DOMAIN = "noreply.example.com";
+                FROM = "AperMon <apermon@noreply.example.com>";
+                TO = "noc@example.com";
+                SUBJECT = "[apermon] $TRIGGER: $TYPE $TARGET";
+            }
         }
         ...
     }
@@ -87,24 +83,24 @@ actions {
 }
 ```
 
-Note that the script must be kept in the same directory with `summary.sh` script.
+Note that:
+
+- The script must be kept in the same directory with `summary.sh` script.
+- `SUBJECT` env will be `eval` by the script (i.e., `eval echo "$SUBJECT"`) to expand the variables.
 
 ### telegram.sh
 
-Sends message to [Telegram](https://telegram.org) chat with [Telegram bot API](https://core.telegram.org/bots). First edit the script to fill in your details:
-
-```
-BOT_TOKEN=''
-CHAT_ID=''
-```
-
-Then simply add the script as a script for your action:
+Sends message to [Telegram](https://telegram.org) chat with [Telegram bot API](https://core.telegram.org/bots). Add the script as a script for your action and set environment variables accordingly:
 
 ```
 actions {
     my-action {
         script "/path/to/telegram.sh" {
             event [ ban unban ];
+            env {
+                BOT_TOKEN = "...";
+                CHAT_ID = "...";
+            }
         }
         ...
     }
