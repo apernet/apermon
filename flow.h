@@ -15,11 +15,13 @@ typedef struct _apermon_context apermon_context;
 typedef struct _apermon_aggregated_flow apermon_aggregated_flow;
 
 typedef struct _apermon_aggregated_flow {
+    uint8_t aggregator; /* enum aggregator */
     uint32_t flow_af; /* enum sflow_af */
 
     union {
         uint32_t inet;
         uint8_t inet6[16];
+        const apermon_config_prefix_lists *net;
     };
 
     const apermon_prefix *prefix;
