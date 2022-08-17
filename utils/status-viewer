@@ -39,6 +39,10 @@ for t in "$@"; do
     t_records="`grep "^$t,0," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 / 1000 " " $8 / 1000 " " $5 / $7 / 8 " " $6 / $8 / 8}'`"
     [ -z "$t_records" ] && {
         t_records="`grep "^$t,1," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 / 1000 " " $8 / 1000 " " $5 / $7 / 8 " " $6 / $8 / 8}'`"
+        t_head=prefix
+    }
+    [ -z "$t_records" ] && {
+        t_records="`grep "^$t,2," <<< "$records" | sort -nr -k5,6 -t, | awk -F, '{print $4 " " $5 / 1000000 " " $6 / 1000000 " " $7 / 1000 " " $8 / 1000 " " $5 / $7 / 8 " " $6 / $8 / 8}'`"
         t_head=net
     }
     [ "$top_n" -gt 0 ] && {

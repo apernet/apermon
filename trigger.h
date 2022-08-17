@@ -7,15 +7,20 @@
 
 typedef struct _apermon_trigger_state {
     uint8_t flags; /* APERMON_TRIGGER_FLAG_* */
+    uint8_t aggregator; /* enum aggregator */
     uint8_t af; /* enum sflow_af */
 
     union {
-        uint32_t inet;
-        uint8_t inet6[16];
+        uint32_t inet; // if aggr = host/prefix
+        uint8_t inet6[16]; // if aggr = host/prefix
+        const apermon_config_prefix_lists *net; // if aggr = net
     };
 
     uint64_t peak_in_pps, peak_out_pps;
     uint64_t peak_in_bps, peak_out_bps;
+
+    const apermon_config_prefix_lists *prefix_list; // always
+    const apermon_prefix *prefix; // always
 
     const apermon_config_triggers *trigger; // not owned by us
 

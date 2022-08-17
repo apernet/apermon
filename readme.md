@@ -176,9 +176,9 @@ Notes:
     - `TRIGGER=protect-my-network`: name of the trigger.
     - `TYPE=ban`: type of event. Always `ban` for `ban` event.
     - `AF=1`: address family. `1` - IPv4, `2` - IPv6.
-    - `AGGREGATOR=host`: aggergator type. See above. 
-    - `ADDR=192.0.2.1`: host/network to be banned.
-    - `PREFIX=192.0.2.0/24`: prefix containing the address.
+    - `AGGREGATOR=host`: aggergator type. See below.
+    - `TARGET=192.0.2.1`: host/prefix/network to be banned.
+    - `PREFIX=192.0.2.0/24`: prefix containing the address. if net aggregator, this will be a list of prefixes.
     - `NET=my-network`: name of the network.
     - `IN_PPS=114514`: inbound pps to the host/network.
     - `OUT_PPS=1919810`: outbound pps from the host/network.
@@ -199,11 +199,11 @@ Notes:
     - `TRIGGER=protect-my-network`: name of the trigger.
     - `TYPE=unban`: type of event. Always `unban` for `unban` event.
     - `AF=1`: address family. `1` - IPv4, `2` - IPv6.
-    - `AGGREGATOR=host`: aggergator type. See above. 
+    - `AGGREGATOR=host`: aggergator type. See below.
     - `FIRST_TRIGGERED=1660166143`: timestamp of initial trigger.
     - `LAST_TRIGGERED=1660169743`: timestamp of last trigger.
-    - `ADDR=192.0.2.1`: host/network to be unbanned.
-    - `PREFIX=192.0.2.0/24`: prefix containing the address.
+    - `TARGET=192.0.2.1`: host/prefix/network to be unbanned.
+    - `PREFIX=192.0.2.0/24`: prefix containing the address. if net aggregator, this will be a list of prefixes.
     - `NET=my-network`: name of the network.
     - `PEAK_IN_PPS=114514`: peak inbound pps to the host/network.
     - `PEAK_OUT_PPS=1919810`: peak outbound pps from the host/network.
@@ -219,7 +219,7 @@ triggers {
         burst-period <time-in-second>;
         networks [ <prefix-name-1> <prefix-name-2> ... ];
         directions [ ingress egress ];
-        aggregate-type <host|net>;
+        aggregate-type <host|prefix|net>;
         thresholds {
             bps <number>[k|m|g];
             pps <number>[k|m|g];
@@ -240,8 +240,9 @@ Notes:
     - `ingress`: to the network(s) and/or host(s) defined in `networks`.
     - `egress`: from the network(s) and/or host(s) defined in `networks`.
 - Possible values of `aggregate-type` are:
-    - `host`: aggregate traffic by hosts (i.e., /32 or /128 for inet and inet6)
-    - `net`: aggregate traffic by nets (networks defined above under "networks")
+    - `host`: aggregate traffic by hosts (i.e., `/32` or `/128` for `inet` and `inet6`)
+    - `prefix`: aggregate traffic by prefixes. (prefixes of networks defined above in `networks`)
+    - `net`: aggregate traffic by nets (networks defined above in `networks`)
 - Possible values of `thresholds` are:
     - `bps <number>[k|m|g];`: trigger if aggregated traffic greater than given bps.
     - `pps <number>[k|m|g];`: trigger if aggregated traffic greater than given pps.
