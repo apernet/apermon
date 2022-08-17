@@ -120,6 +120,10 @@ host {
     return HOST;
 }
 
+prefix {
+    return PREFIX;
+}
+
 net {
     return NET;
 }
