@@ -143,14 +143,14 @@ void select_flow(const apermon_flow_record *flow) {
                 _ctx->flow_directions[_ctx->n_selected] = FLOW_INGRESS;
                 _ctx->selected_flows[_ctx->n_selected] = flow;
                 _ctx->selected_prefixes[_ctx->n_selected] = pfx;
-                _ctx->selected_prefixe_lists[_ctx->n_selected] = ls->prefix_list;
+                _ctx->selected_prefix_lists[_ctx->n_selected] = ls->prefix_list;
                 _ctx->n_selected++;
                 break;
             } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && (pfx = apermon_prefix_list_match_inet(ps, flow->src_inet))) {
                 _ctx->flow_directions[_ctx->n_selected] = FLOW_EGRESS;
                 _ctx->selected_flows[_ctx->n_selected] = flow;
                 _ctx->selected_prefixes[_ctx->n_selected] = pfx;
-                _ctx->selected_prefixe_lists[_ctx->n_selected] = ls->prefix_list;
+                _ctx->selected_prefix_lists[_ctx->n_selected] = ls->prefix_list;
                 _ctx->n_selected++;
                 break;
             }
@@ -159,14 +159,14 @@ void select_flow(const apermon_flow_record *flow) {
                 _ctx->flow_directions[_ctx->n_selected] = FLOW_INGRESS;
                 _ctx->selected_flows[_ctx->n_selected] = flow;
                 _ctx->selected_prefixes[_ctx->n_selected] = pfx;
-                _ctx->selected_prefixe_lists[_ctx->n_selected] = ls->prefix_list;
+                _ctx->selected_prefix_lists[_ctx->n_selected] = ls->prefix_list;
                 _ctx->n_selected++;
                 break;
             } else if ((t->flags & APERMON_TRIGGER_CHECK_EGRESS) && (pfx = apermon_prefix_list_match_inet6(ps, flow->src_inet6))) {
                 _ctx->flow_directions[_ctx->n_selected] = FLOW_EGRESS;
                 _ctx->selected_flows[_ctx->n_selected] = flow;
                 _ctx->selected_prefixes[_ctx->n_selected] = pfx;
-                _ctx->selected_prefixe_lists[_ctx->n_selected] = ls->prefix_list;
+                _ctx->selected_prefix_lists[_ctx->n_selected] = ls->prefix_list;
                 _ctx->n_selected++;
                 break;
             }

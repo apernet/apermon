@@ -88,7 +88,10 @@ static apermon_aggregated_flow *aggergrate_one_flow(size_t i, const apermon_cont
     af->last_modified = ctx->now.tv_sec;
     af->flow_af = flow->flow_af;
     af->prefix = ctx->selected_prefixes[i];
+    af->prefix_list = ctx->selected_prefix_lists[i];
     af->aggregator = ctx->trigger_config->aggregator;
+    af->find_func = find;
+    af->add_or_update_func = update;
 
     if (ctx->flow_directions[i] == FLOW_INGRESS) {
         af->current_in_bytes += flow->frame_length * rate;
@@ -102,6 +105,7 @@ static apermon_aggregated_flow *aggergrate_one_flow(size_t i, const apermon_cont
 
     // inet is locate at the start of union - type is not important, only need its address so this copy works
     memcpy(&af->inet, key, key_sz); 
+    af->target_var_len = key_sz;
 
     update(ctx->aggr_hash, key, af, (void **) &oldval);
 
@@ -130,7 +134,7 @@ int aggergrate_flows(apermon_context *ctx) {
         flow = ctx->selected_flows[i];
         dir = ctx->flow_directions[i];
         pfx = ctx->selected_prefixes[i];
-        plist = ctx->selected_prefixe_lists[i];
+        plist = ctx->selected_prefix_lists[i];
         
         // select hash key and hash fns
         if (t->aggregator == APERMON_AGGREGATOR_HOST) {

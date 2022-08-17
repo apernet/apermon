@@ -19,12 +19,18 @@ typedef struct _apermon_aggregated_flow {
     uint32_t flow_af; /* enum sflow_af */
 
     union {
-        uint32_t inet;
-        uint8_t inet6[16];
-        const apermon_config_prefix_lists *net;
-    };
+        uint32_t inet; // if aggr = host/prefix
+        uint8_t inet6[16]; // if aggr = host/prefix
+        const apermon_config_prefix_lists *net; // if aggr = net
+    }; // key
 
-    const apermon_prefix *prefix;
+    hash_find_func find_func;
+    hash_add_or_update_func add_or_update_func;
+    size_t target_var_len;
+
+    const apermon_config_prefix_lists *prefix_list; // always
+    const apermon_prefix *prefix; // always
+
     uint64_t current_in_bytes, current_out_bytes;
     uint64_t current_in_pkts, current_out_pkts;
 
