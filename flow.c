@@ -145,8 +145,8 @@ int aggergrate_flows(apermon_context *ctx) {
                 key = flow->flow_af == SFLOW_AF_INET ? (void *) &flow->dst_inet : (void *) flow->dst_inet6;
                 key_sz = flow->flow_af == SFLOW_AF_INET ? sizeof(flow->dst_inet) : sizeof(flow->dst_inet6);
             } else if (t->flags & APERMON_TRIGGER_CHECK_EGRESS && dir == FLOW_EGRESS) {
-                key = flow->flow_af == SFLOW_AF_INET ? (void *) &flow->dst_inet : (void *) flow->dst_inet6;
-                key_sz = flow->flow_af == SFLOW_AF_INET ? sizeof(flow->dst_inet) : sizeof(flow->dst_inet6);
+                key = flow->flow_af == SFLOW_AF_INET ? (void *) &flow->src_inet : (void *) flow->src_inet6;
+                key_sz = flow->flow_af == SFLOW_AF_INET ? sizeof(flow->src_inet) : sizeof(flow->src_inet6);
             } else {
                 continue;
             }
