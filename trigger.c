@@ -150,7 +150,7 @@ static void run_trigger_script_ban(const apermon_config_triggers *config, const 
     snprintf(strbuf, sizeof(strbuf), "TRIGGER=%s", config->name);
     envp[11] = strdup(strbuf);
 
-    for (i = 11, j = 0; j < (int) script->n_envs; ++i, ++j) {
+    for (i = 12, j = 0; j < (int) script->n_envs; ++i, ++j) {
         envp[i] = strdup(script->envs[j]);
     }
 
@@ -253,7 +253,7 @@ static void run_trigger_script_unban(const apermon_trigger_state *ts, const aper
     snprintf(strbuf, sizeof(strbuf), "PEAK_OUT_BPS=%lu", ts->peak_out_bps);
     envp[12] = strdup(strbuf);
 
-    for (i = 12, j = 0; j < (int) script->n_envs; ++i, ++j) {
+    for (i = 13, j = 0; j < (int) script->n_envs; ++i, ++j) {
         envp[i] = strdup(script->envs[j]);
     }
 
