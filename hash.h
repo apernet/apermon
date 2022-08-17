@@ -4,10 +4,12 @@
 #include <unistd.h>
 
 #if UINTPTR_MAX == 0xFFFFFFFF
+    #define hash_ptr_len sizeof(uint32_t)
     #define hash_ptr_add_or_update hash32_add_or_update
     #define hash_ptr_find hash32_find
     #define hash_ptr_delete hash32_delete
 #elif UINTPTR_MAX == 0xFFFFFFFFFFFFFFFFu
+    #define hash_ptr_len sizeof(uint64_t)
     #define hash_ptr_add_or_update hash64_add_or_update
     #define hash_ptr_find hash64_find
     #define hash_ptr_delete hash64_delete
@@ -38,18 +40,20 @@ typedef struct _apermon_hash {
 } apermon_hash;
 
 typedef void (*hash_element_freer_func)(void *value);
+typedef void* (*hash_find_func)(apermon_hash *tbl, const void *key);
+typedef void (*hash_add_or_update_func)(apermon_hash *tbl, const void *key, void *value, void **old_value);
 
-void hash32_add_or_update(apermon_hash *tbl, const uint32_t *key, void *value, void **old_value);
-void *hash32_find(apermon_hash *tbl, const uint32_t *key);
-void *hash32_delete(apermon_hash *tbl, const uint32_t *key);
+void hash32_add_or_update(apermon_hash *tbl, const void *key, void *value, void **old_value);
+void *hash32_find(apermon_hash *tbl, const void *key);
+void *hash32_delete(apermon_hash *tbl, const void *key);
 
-void hash64_add_or_update(apermon_hash *tbl, const uint8_t *key, void *value, void **old_value);
-void *hash64_find(apermon_hash *tbl, const uint8_t *key);
-void *hash64_delete(apermon_hash *tbl, const uint8_t *key);
+void hash64_add_or_update(apermon_hash *tbl, const void *key, void *value, void **old_value);
+void *hash64_find(apermon_hash *tbl, const void *key);
+void *hash64_delete(apermon_hash *tbl, const void *key);
 
-void hash128_add_or_update(apermon_hash *tbl, const uint8_t *key, void *value, void **old_value);
-void *hash128_find(apermon_hash *tbl, const uint8_t *key);
-void *hash128_delete(apermon_hash *tbl, const uint8_t *key);
+void hash128_add_or_update(apermon_hash *tbl, const void *key, void *value, void **old_value);
+void *hash128_find(apermon_hash *tbl, const void *key);
+void *hash128_delete(apermon_hash *tbl, const void *key);
 
 apermon_hash_item *hash_erase(apermon_hash *tbl, apermon_hash_item *item, const hash_element_freer_func freer);
 
