@@ -39,10 +39,10 @@ actions {
         script "/path/to/exabgp.sh" {
             event [ ban unban ];
             env {
-                EXABGP_CONTROL_SOCKET = "/var/run/exabgp.sock";
-                EXABGP_COMMUNITIES = "(65535:666 65001:666)";
-                EXABGP_NEXTHOP = "10.66.66.66";
-                LOCKFILE = "/tmp/apermon-exabgp.lock";
+                EXABGP_CONTROL_SOCKET   = "/var/run/exabgp.sock";
+                EXABGP_COMMUNITIES      = "65535:666 65001:666";
+                EXABGP_NEXTHOP          = "10.66.66.66";
+                LOCKFILE                = "/tmp/apermon-exabgp.lock";
             }
         }
         ...
@@ -71,9 +71,9 @@ actions {
             event [ ban unban ];
             env {
                 API_KEY = "api:key-...";
-                DOMAIN = "noreply.example.com";
-                FROM = "AperMon <apermon@noreply.example.com>";
-                TO = "noc@example.com";
+                DOMAIN  = "noreply.example.com";
+                FROM    = "AperMon <apermon@noreply.example.com>";
+                TO      = "noc@example.com";
                 SUBJECT = "[apermon] $TRIGGER: $TYPE $TARGET";
             }
         }
@@ -99,7 +99,7 @@ actions {
             event [ ban unban ];
             env {
                 BOT_TOKEN = "...";
-                CHAT_ID = "...";
+                CHAT_ID   = "...";
             }
         }
         ...
