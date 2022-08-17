@@ -36,14 +36,14 @@ static void env_dump_prefixes(const apermon_config_prefix_list_elements *el, cha
 
 static void run_trigger_script_ban(const apermon_config_triggers *config, const apermon_config_action_scripts *script, const apermon_aggregated_flow *flow) {
     char **argv = calloc(2, sizeof(char *));
-    char **envp = calloc(13, sizeof(char *));
+    char **envp = calloc(13 + script->n_envs, sizeof(char *));
     char strbuf[0xffff], addr[INET6_ADDRSTRLEN + 1], addr2[INET6_ADDRSTRLEN + 1];
 
     const apermon_config_prefix_lists *l = flow->prefix_list;
     const apermon_prefix *pfx = flow->prefix;
     const apermon_flow_record *fr;
 
-    int offset = 0, i, ret;
+    int offset = 0, i, j, ret;
 
     log_info("running trigger script '%s' for ban event\n", script->name);
 
@@ -150,7 +150,11 @@ static void run_trigger_script_ban(const apermon_config_triggers *config, const 
     snprintf(strbuf, sizeof(strbuf), "TRIGGER=%s", config->name);
     envp[11] = strdup(strbuf);
 
-    envp[12] = NULL;
+    for (i = 11, j = 0; j < (int) script->n_envs; ++i, ++j) {
+        envp[i] = strdup(script->envs[j]);
+    }
+
+    envp[i] = NULL;
 
     ret = execve(script->name, argv, envp);
 
@@ -161,13 +165,13 @@ static void run_trigger_script_ban(const apermon_config_triggers *config, const 
 
 static void run_trigger_script_unban(const apermon_trigger_state *ts, const apermon_config_action_scripts *script) {
     char **argv = calloc(2, sizeof(char *));
-    char **envp = calloc(14, sizeof(char *));
+    char **envp = calloc(14 + script->n_envs, sizeof(char *));
     char strbuf[0xffff], addr[INET6_ADDRSTRLEN + 1];
 
     const apermon_config_prefix_lists *l = ts->prefix_list;
     const apermon_prefix *pfx = ts->prefix;
 
-    int ret;
+    int ret, i, j;
 
     log_info("running trigger script '%s' for unban event\n", script->name);
 
@@ -249,7 +253,11 @@ static void run_trigger_script_unban(const apermon_trigger_state *ts, const aper
     snprintf(strbuf, sizeof(strbuf), "PEAK_OUT_BPS=%lu", ts->peak_out_bps);
     envp[12] = strdup(strbuf);
 
-    envp[13] = NULL;
+    for (i = 12, j = 0; j < (int) script->n_envs; ++i, ++j) {
+        envp[i] = strdup(script->envs[j]);
+    }
+
+    envp[i] = NULL;
 
     ret = execve(script->name, argv, envp);
 
