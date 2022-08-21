@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-    echo "usage: $0 [-h] [-n top_n] trigger-name [trigger-name ...]"
+    echo "usage: $0 [-h] [-n top_n] status-file trigger-name [trigger-name ...]"
 }
 
 OPTIND=1
