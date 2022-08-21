@@ -485,7 +485,7 @@ void triggers_timed_callback() {
         t = t->next;
     }
 
-    if (now.tv_sec - _last_status_dump >= _config->status_dump_interval) {
+    if (now.tv_sec - _last_status_dump >= _config->status_dump_interval && _config->status_file) {
         _last_status_dump = now.tv_sec;
         status_dump();
     }
