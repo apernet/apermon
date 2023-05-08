@@ -124,9 +124,10 @@ static void run_trigger_script_ban(const apermon_config_triggers *config, const 
             inet_ntop(AF_INET6, fr->dst_inet6, addr2, sizeof(addr2));
         }
 
-        offset += snprintf(strbuf + offset, sizeof(strbuf) - offset, "%u,%u,%u,%s,%s,%u,%u,%u,%u,%u\n",
+        offset += snprintf(strbuf + offset, sizeof(strbuf) - offset, "%u,%u,%u,%s,%s,%u,%u,%u,%u,%u,%u\n",
             fr->flow_af, fr->in_ifindex, fr->out_ifindex, addr, addr2, fr->l3_proto,
-            fr->src_port, fr->dst_port, fr->frame_length * fr->rate, fr->rate
+            fr->src_port, fr->dst_port, fr->frame_length * fr->rate, fr->rate,
+            (fr->frag_off != 0) ? 2 : (fr->mf_bit ? 1 : 0)
         );
 
         if ((size_t) offset >= sizeof(strbuf)) {

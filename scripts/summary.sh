@@ -10,7 +10,7 @@ TOP_FLOWS_COUNT="${TOP_FLOWS_COUNT:-10}"
     printf 'out: %d Mbps, %d pps\n' "$((OUT_BPS / 1000000))" "$OUT_PPS"
     printf '\n'
 
-    <<< "$FLOWS" sed 1d | sort -t, -k9 -nr | head -n $TOP_FLOWS_COUNT | grep -v '^$' | awk -F, '{ print "[" $4 "]:" $7 " -> [" $5 "]:" $8 "\n    proto " $6 ", " $9 / 1000000 " mb, " $10 " pkts" }' 
+    <<< "$FLOWS" sed 1d | sort -t, -k9 -nr | head -n $TOP_FLOWS_COUNT | grep -v '^$' | awk -F, '{ print "[" $4 "]:" $7 " -> [" $5 "]:" $8 "\n    proto " $6 ", frag " $11 ", " $9 / 1000000 " mb, " $10 " pkts" }' 
     [ "`<<< "$FLOWS" sed 1d | wc -l`" -gt $TOP_FLOWS_COUNT ] && {
         printf '(only top %d flow(s) are shown)\n' $TOP_FLOWS_COUNT
     }

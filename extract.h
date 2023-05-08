@@ -15,6 +15,9 @@ typedef struct _apermon_flow_records {
     uint32_t out_ifindex;
     uint32_t frame_length;
 
+    uint16_t frag_off;
+    uint16_t mf_bit;
+
     union {
         uint32_t src_inet;
         uint8_t src_inet6[16];
@@ -26,8 +29,8 @@ typedef struct _apermon_flow_records {
     };
 
     uint8_t l3_proto;
-    uint16_t src_port; // valid iff l3proto = tcp or udp
-    uint16_t dst_port; // valid iff l3proto = tcp or udp
+    uint16_t src_port; // valid iff l3proto = tcp or udp && frag_off = 0
+    uint16_t dst_port; // valid iff l3proto = tcp or udp && frag_off = 0
 
     struct _apermon_flow_records *next;
 } apermon_flow_record;

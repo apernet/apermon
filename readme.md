@@ -206,10 +206,11 @@ Notes:
         - `src`: source IP / IPv6 address.
         - `dst`: dst IP / IPv6 address.
         - `proto`: IP protocol / IPv6 next header.
-        - `sport`: layer 4 src port.
-        - `dport`: layer 4 dst port.
+        - `sport`: layer 4 src port. (not valid if frag = 2)
+        - `dport`: layer 4 dst port. (not valid if frag = 2)
         - `bytes`: number of bytes.
         - `packets`: number of packets.
+        - `frag`: `0` - not fragmented, `1` - first fragment, `2` - non-first fragment
 - For `unban` events, the following environment variables are passed to the script (values are just example):
     - `TRIGGER=protect-my-network`: name of the trigger.
     - `TYPE=unban`: type of event. Always `unban` for `unban` event.
@@ -274,6 +275,7 @@ Notes:
     - `protocol <udp|tcp|number>;`: inet protocol number / inet6 next-header number.
     - `source-port <number>;`: layer 4 source port.
     - `destination-port <number>;`: layer 4 destination port.
+    - `is-fragment;`: IP fragments (i.e., `frag-off` != 0 or mf bit set)
 - The three logical operators (`and`, `or`, and `not`) may be nested to build a more complex filter. If the root term under `filter {}` is not one of the logical operators, `and` is assumed.
 - `actions` should be a list of names of actions defined in `actions`.
 

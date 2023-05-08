@@ -31,6 +31,8 @@ static inline int parse_inet(const uint8_t *buffer, size_t sz, apermon_flow_reco
     apermon_flow_record *parsed = (apermon_flow_record *) malloc(sizeof(apermon_flow_record));
 
     parsed->flow_af = SFLOW_AF_INET;
+    parsed->mf_bit = ntohs(hdr->frag_off) & 0x2000;
+    parsed->frag_off = ntohs(hdr->frag_off) & 0x1fff;
     parsed->l3_proto = hdr->protocol;
     parsed->dst_inet = hdr->daddr;
     parsed->src_inet = hdr->saddr;

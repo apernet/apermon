@@ -125,6 +125,16 @@ int cond_dst_port(const apermon_flow_record* record, const void* arg /* uint16_t
     return (* (uint16_t *) arg) == record->dst_port;
 }
 
+int cond_is_fragment(const apermon_flow_record* record, const void* arg /* unused */) {
+    (void) arg;
+
+    if (record->flow_af == SFLOW_AF_INET6) {
+        return 0;
+    }
+
+    return record->frag_off != 0 || record->mf_bit;
+}
+
 void cond_begin(apermon_context *ctx) {
     _ctx = ctx;
 }

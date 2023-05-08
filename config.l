@@ -208,6 +208,10 @@ destination-port {
     return DESTINATION_PORT;
 }
 
+is-fragment {
+    return IS_FRAGMENT;
+}
+
 \{ {
     return LBRACE;
 }

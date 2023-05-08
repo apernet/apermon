@@ -58,7 +58,7 @@
 %token ACTIONS SCRIPT EVENTS BAN UNBAN ENV EQUALS
 %token TRIGGERS NETWORKS DIRECTIONS INGRESS EGRESS AGGREGATE_TYPE HOST PREFIX NET 
 %token THRESHOLDS BPS PPS K M G
-%token FILTER AND OR NOT SOURCE DESTINATION IN_INTERFACE OUT_INTERFACE PROTOCOL TCP UDP SOURCE_PORT DESTINATION_PORT
+%token FILTER AND OR NOT SOURCE DESTINATION IN_INTERFACE OUT_INTERFACE PROTOCOL TCP UDP SOURCE_PORT DESTINATION_PORT IS_FRAGMENT
 
 %token <u64> NUMBER
 %token <d> DOUBLE
@@ -338,6 +338,9 @@ filter
         uint16_t *arg = malloc(sizeof(uint16_t));
         *arg = $2;
         $$ = new_cond_func_list_element(cond_dst_port, arg);
+    }
+    | IS_FRAGMENT SEMICOLON {
+        $$ = new_cond_func_list_element(cond_is_fragment, NULL);
     }
 
 action_list

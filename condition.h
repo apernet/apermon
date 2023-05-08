@@ -33,6 +33,7 @@ int cond_dst(const apermon_flow_record* record, const void* arg /* apermon_confi
 int cond_proto(const apermon_flow_record* record, const void* arg /* uint8_t* */); /* keep only flow where l3proto in list */
 int cond_src_port(const apermon_flow_record* record, const void* arg /* uint16_t* */); /* keep only flow where src port in list */
 int cond_dst_port(const apermon_flow_record* record, const void* arg /* uint16_t* */); /* keep only flow where dst port in list */
+int cond_is_fragment(const apermon_flow_record* record, const void* arg /* unused */); /* keep only fragment */
 
 /* misc functions */
 
