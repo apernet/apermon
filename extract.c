@@ -10,6 +10,8 @@ enum ethertypes {
     APERMON_ETHER_INET = 0x0800,
     APERMON_ETHER_INET6 = 0x86dd,
     APERMON_ETHER_VLAN = 0x8100,
+    APERMON_ETHER_MPLS_UNICAST = 0x8847,
+    APERMON_ETHER_MPLS_MULTICAST = 0x8848
 };
 
 enum l3proto {
@@ -101,7 +103,7 @@ static inline int parse_hdr(const sflow_sample_element_hdr *from, apermon_flow_r
         ethertype = ntohs(* (const uint16_t *) buffer);
         buffer += sizeof(uint16_t);
     }
-
+    
     if (ethertype == APERMON_ETHER_INET) {
         return parse_inet(buffer, len - (buffer - from->hdr_bytes), to);
     }
@@ -110,6 +112,77 @@ static inline int parse_hdr(const sflow_sample_element_hdr *from, apermon_flow_r
         return parse_inet6(buffer, len - (buffer - from->hdr_bytes), to);
     }
 
+    // skip mpls if exist
+    while (ethertype == APERMON_ETHER_MPLS_UNICAST || ethertype == APERMON_ETHER_MPLS_MULTICAST) {
+        // Continue to skip over MPLS headers until we find the BoS (Bottom of Stack) bit
+        do {
+            // Assuming the MPLS header is 4 bytes long,
+            // we need to check the BoS bit which is in the last byte of the MPLS header.
+            uint32_t mpls_header;
+            memcpy(&mpls_header, buffer, sizeof(uint32_t)); // Copy 4 bytes of MPLS header
+            mpls_header = ntohl(mpls_header); // Convert network byte order to host byte order
+            
+            buffer += sizeof(uint32_t); // Move the buffer pointer past this MPLS label
+            
+            if (mpls_header & 0x00000100) { // Check if the BoS bit is set
+                break; // Found the last MPLS label, exit the loop
+            }
+        } while (1);
+
+        // After processing all MPLS labels, check for PW Control Word
+        if ((buffer - from->hdr_bytes) + sizeof(uint32_t) <= len) { // Ensure buffer has space for PW Control Word
+            uint32_t potential_pw_control_word;
+            memcpy(&potential_pw_control_word, buffer, sizeof(uint32_t));
+            potential_pw_control_word = ntohl(potential_pw_control_word);
+
+            // Check if the first 4 bits are 0000, indicating a PW Control Word
+            if ((potential_pw_control_word >> 28) == 0) {
+                //log_warn("MPLS PW control word detected.\n");
+                buffer += sizeof(uint32_t); // Skip the PW Control Word
+            }
+        }
+
+        // After MPLS and optional PW Control Word, check and skip Ethernet L2 header
+        // Ensure there's enough buffer space for Ethernet header
+        if ((buffer - from->hdr_bytes) + 14 <= len) {
+            // Assume an Ethernet header is present. Usually, it's 14 bytes without VLAN.
+            // If the next two bytes after Ethernet addresses indicate a VLAN tag (0x8100),
+            // additional skips for VLAN tags should be performed here.
+
+            uint16_t next_ethertype = ntohs(*(const uint16_t *)(buffer + 12)); // Peek ethertype
+            if (next_ethertype == APERMON_ETHER_VLAN) {
+                // Skip VLAN tagged Ethernet header
+                if ((buffer - from->hdr_bytes) + 18 <= len) { // Check buffer for VLAN header
+                    buffer += 18; // Ethernet header + VLAN tag
+                } else {
+                    log_warn("Not enough data for VLAN tagged Ethernet header.\n");
+                    return 0; // Buffer overrun error
+                }
+            } else if (next_ethertype == APERMON_ETHER_INET || next_ethertype == APERMON_ETHER_INET6 ){
+                // Skip standard Ethernet header
+                buffer += 14; // Standard Ethernet header
+            }
+        } else {
+            log_warn("Not enough data for Ethernet header.\n");
+            return 0; // Not enough data to skip Ethernet header
+        }
+
+        // IP Header Processing
+        const uint8_t *ip_header = buffer;
+        uint8_t version = (*ip_header) >> 4;
+
+        //log_warn("IP header version: %u\n",version);
+
+        if (version == 4) {
+            return parse_inet(buffer, len - (buffer - from->hdr_bytes), to);
+        } else if (version == 6) {
+            return parse_inet6(buffer, len - (buffer - from->hdr_bytes), to);
+        } else {
+            log_warn("Neither IPv4 or IPv6 header matched after MPLS tag.\n");
+            log_debug("Packet Raw: %u\n", buffer);
+            break;
+        }
+    }
     return 0;
 }
 
