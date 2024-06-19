@@ -37,7 +37,7 @@ Then add the script as a script for your action and set environment variables ac
 actions {
     my-action {
         script "/path/to/exabgp.sh" {
-            event [ ban unban ];
+            events [ ban unban ];
             env {
                 EXABGP_CONTROL_SOCKET   = "/var/run/exabgp.sock";
                 EXABGP_COMMUNITIES      = "65535:666 65001:666";
